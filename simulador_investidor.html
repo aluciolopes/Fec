@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Perfil de Investidor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+        header {
+            background-color: #4CAF50;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+        .content {
+            padding: 20px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .question-container {
+            margin-bottom: 20px;
+        }
+        .result-container {
+            margin-top: 20px;
+            background-color: #e7e7e7;
+            padding: 10px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Simulador de Perfil de Investidor</h1>
+    <p>Responda às perguntas para saber qual o seu perfil de investidor e receber uma sugestão de portfólio de investimentos.</p>
+</header>
+
+<div class="content">
+    <div id="questions">
+        <!-- Perguntas serão injetadas aqui via JavaScript -->
+    </div>
+    
+    <button onclick="nextQuestion()">Próxima Pergunta</button>
+
+    <div id="result" class="result-container" style="display: none;">
+        <h3>Seu Perfil de Investidor: <span id="investorProfile"></span></h3>
+        <p>Portfólio recomendado:</p>
+        <ul id="portfolio"></ul>
+    </div>
+</div>
+
+<script>
+    // Perguntas do simulador
+    const questions = [
+        {
+            question: "Você tem conhecimento sobre o mercado financeiro?",
+            options: ["Sim", "Não"],
+            weight: [2, 0]
+        },
+        {
+            question: "Qual o seu objetivo principal ao investir?",
+            options: ["Rendimento alto", "Rendimento constante", "Proteger meu dinheiro"],
+            weight: [2, 1, 0]
+        },
+        {
+            question: "Qual sua tolerância a risco?",
+            options: ["Alta", "Média", "Baixa"],
+            weight: [2, 1, 0]
+        },
+        {
+            question: "Por quanto tempo você pretende deixar o dinheiro investido?",
+            options: ["Mais de 5 anos", "Entre 3 a 5 anos", "Menos de 3 anos"],
+            weight: [2, 1, 0]
+        }
+    ];
+
+    let currentQuestionIndex = 0;
+    let scores = [0, 0, 0]; // [Conservador, Moderado, Agressivo]
+
+    // Exibir as perguntas
+    function showQuestion() {
+        const questionContainer = document.getElementById("questions");
+        const questionData = questions[currentQuestionIndex];
+
+        questionContainer.innerHTML = `
+            <div class="question-container">
+                <h3>${questionData.question}</h3>
+                ${questionData.options.map((option, index) => `
+                    <button onclick="answerQuestion(${index})">${option}</button>
+                `).join('')}
+            </div>
+        `;
+    }
+
+    // Progresso entre as perguntas
+    function nextQuestion() {
+        if (currentQuestionIndex < questions.length) {
+            showQuestion();
+            currentQuestionIndex++;
+        } else {
+            showResults();
+        }
+    }
+
+    // Registrar a resposta e acumular pontos
+    function answerQuestion(index) {
+        const questionData = questions[currentQuestionIndex - 1];
+        const weight = questionData.weight[index];
+
+        if (weight === 2) {
+            scores[2]++;
+        } else if (weight === 1) {
+            scores[1]++;
+        } else {
+            scores[0]++;
+        }
+        
+        nextQuestion();
+    }
+
+    // Exibir o resultado baseado nas pontuações
+    function showResults() {
+        const totalScore = Math.max(...scores);
+        let profile = '';
+        let portfolio = [];
+
+        if (totalScore === scores[2]) {
+            profile = 'Agressivo';
+            portfolio = [
+                '80% em Renda Variável (ações)',
+                '10% em Renda Fixa',
+                '10% em Criptoativos'
+            ];
+        } else if (totalScore === scores[1]) {
+            profile = 'Moderado';
+            portfolio = [
+                '60% em Renda Fixa',
+                '30% em Renda Variável (ações)',
+                '10% em Criptoativos'
+            ];
+        } else {
+            profile = 'Conservador';
+            portfolio = [
+                '90% em Renda Fixa',
+                '5% em Renda Variável (ações)',
+                '5% em Criptoativos'
+            ];
+        }
+
+        document.getElementById("investorProfile").textContent = profile;
+        const portfolioList = document.getElementById("portfolio");
+        portfolioList.innerHTML = portfolio.map(item => `<li>${item}</li>`).join('');
+        document.getElementById("result").style.display = 'block';
+        document.querySelector("button").style.display = 'none'; // Ocultar botão de próxima pergunta
+    }
+
+    // Iniciar o simulador
+    nextQuestion();
+</script>
+
+</body>
+</html>

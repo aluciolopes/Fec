@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feira de Cursos - Áreas de Atuação do Economista</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+        header {
+            background-color: #4CAF50;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+        .content {
+            padding: 20px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .info-box {
+            display: none;
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #e7e7e7;
+            border-radius: 5px;
+        }
+        .info-box h3 {
+            margin: 0;
+            padding-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Feira de Cursos - Áreas de Atuação do Economista</h1>
+    <p>Explore as diversas áreas em que os economistas podem atuar.</p>
+</header>
+
+<div class="content">
+    <h2>Escolha uma área de atuação:</h2>
+
+    <!-- Botões de Áreas de Atuação -->
+    <button onclick="mostrarInfo('estudo_viabilidade')">Estudo de Viabilidade Econômica</button>
+    <button onclick="mostrarInfo('economia_empresas')">Economia de Empresas</button>
+    <button onclick="mostrarInfo('orientacao_financeira')">Orientação Financeira</button>
+    <button onclick="mostrarInfo('mercado_financeiro')">Mercado Financeiro</button>
+    <button onclick="mostrarInfo('consultoria_assessoria')">Consultoria e Assessoria</button>
+    <button onclick="mostrarInfo('comercio_exterior')">Comércio Exterior</button>
+    <button onclick="mostrarInfo('pericia')">Perícia</button>
+    <button onclick="mostrarInfo('arbitragem')">Arbitragem</button>
+    <button onclick="mostrarInfo('analise_conjuntura')">Análise de Conjuntura Econômica</button>
+    <button onclick="mostrarInfo('entidades_classe')">Entidades de Classe</button>
+    <button onclick="mostrarInfo('diversas_assessorias')">Diversas Assessorias Econômicas</button>
+    <button onclick="mostrarInfo('elaboracao_projetos')">Elaboração de Projetos</button>
+    <button onclick="mostrarInfo('economia_ambiental')">Economia do Meio-Ambiente</button>
+
+    <!-- Informações das Áreas de Atuação -->
+    <div id="estudo_viabilidade" class="info-box">
+        <h3>Estudo de Viabilidade Econômica</h3>
+        <p>O economista verifica a viabilidade de projetos, analisando custos, receitas e fontes de financiamento.</p>
+    </div>
+
+    <div id="economia_empresas" class="info-box">
+        <h3>Economia de Empresas</h3>
+        <p>O economista realiza estudos e análises sobre macroeconomia e microeconomia, visando otimizar a operação das empresas.</p>
+    </div>
+
+    <div id="orientacao_financeira" class="info-box">
+        <h3>Orientação Financeira</h3>
+        <p>Investigações sobre os investimentos mais rentáveis e fontes de financiamento disponíveis para as empresas.</p>
+    </div>
+
+    <div id="mercado_financeiro" class="info-box">
+        <h3>Mercado Financeiro</h3>
+        <p>Atuação em bancos, corretoras e distribuidoras de valores mobiliários, realizando análises e projeções do mercado.</p>
+    </div>
+
+    <div id="consultoria_assessoria" class="info-box">
+        <h3>Consultoria e Assessoria</h3>
+        <p>O economista presta consultoria estratégica para empresas, cooperativas e outras entidades, incluindo análise econômica e gestão.</p>
+    </div>
+
+    <div id="comercio_exterior" class="info-box">
+        <h3>Comércio Exterior</h3>
+        <p>Atuação voltada para a análise de economias internacionais e facilitação de negociações de comércio entre países.</p>
+    </div>
+
+    <div id="pericia" class="info-box">
+        <h3>Perícia</h3>
+        <p>O economista realiza a análise técnico-científica de fatos econômicos para embasar processos judiciais e administrativos.</p>
+    </div>
+
+    <div id="arbitragem" class="info-box">
+        <h3>Arbitragem</h3>
+        <p>O economista oferece soluções econômicas para resolver disputas de forma alternativa à justiça, com menor burocracia.</p>
+    </div>
+
+    <div id="analise_conjuntura" class="info-box">
+        <h3>Análise de Conjuntura Econômica</h3>
+        <p>Estudos que abordam grandes agregados econômicos, como a Renda Nacional e o PIB, para prever cenários econômicos futuros.</p>
+    </div>
+
+    <div id="entidades_classe" class="info-box">
+        <h3>Entidades de Classe</h3>
+        <p>O economista atua na orientação política e econômica em sindicatos, associações e outras entidades representativas.</p>
+    </div>
+
+    <div id="diversas_assessorias" class="info-box">
+        <h3>Diversas Assessorias Econômicas</h3>
+        <p>O economista pode atuar em assessorias econômicas, auxiliando no planejamento estratégico e na análise de tendências de mercado.</p>
+    </div>
+
+    <div id="elaboracao_projetos" class="info-box">
+        <h3>Elaboração de Projetos</h3>
+        <p>O economista realiza estudos econômico-financeiros para a obtenção de recursos e apoio de entidades financeiras nacionais e internacionais.</p>
+    </div>
+
+    <div id="economia_ambiental" class="info-box">
+        <h3>Economia do Meio-Ambiente</h3>
+        <p>Atuação na análise econômica relacionada aos recursos naturais, estudos de impacto ambiental e gestão de políticas públicas ambientais.</p>
+    </div>
+</div>
+
+<script>
+    function mostrarInfo(tipo) {
+        // Esconde todas as caixas de informações
+        var infos = document.querySelectorAll('.info-box');
+        infos.forEach(function(info) {
+            info.style.display = 'none';
+        });
+
+        // Mostra a caixa de informações selecionada
+        var infoBox = document.getElementById(tipo);
+        if (infoBox) {
+            infoBox.style.display = 'block';
+        }
+    }
+</script>
+
+</body>
+</html>

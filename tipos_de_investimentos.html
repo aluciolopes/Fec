@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feira de Cursos - Tipos de Investimentos</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+        header {
+            background-color: #4CAF50;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+        .content {
+            padding: 20px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .info-box {
+            display: none;
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #e7e7e7;
+            border-radius: 5px;
+        }
+        .info-box h3 {
+            margin: 0;
+            padding-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Feira de Cursos - Tipos de Investimentos</h1>
+    <p>Explore os diferentes tipos de investimentos e suas características.</p>
+</header>
+
+<div class="content">
+    <h2>Escolha um tipo de investimento:</h2>
+
+    <!-- Botões de Tipos de Investimentos -->
+    <button onclick="mostrarInfo('renda_fixa')">Renda Fixa</button>
+    <button onclick="mostrarInfo('acoes')">Ações</button>
+    <button onclick="mostrarInfo('fundos_imobiliarios')">Fundos Imobiliários</button>
+    <button onclick="mostrarInfo('criptomoedas')">Criptomoedas</button>
+    <button onclick="mostrarInfo('tesouro_direto')">Tesouro Direto</button>
+
+    <!-- Informações dos Tipos de Investimentos -->
+    <div id="renda_fixa" class="info-box">
+        <h3>Renda Fixa</h3>
+        <p>Investimentos com rentabilidade previsível, como CDBs e Tesouro Direto.</p>
+    </div>
+
+    <div id="acoes" class="info-box">
+        <h3>Ações</h3>
+        <p>Investimentos em empresas, com maior risco, mas também maior retorno potencial.</p>
+    </div>
+
+    <div id="fundos_imobiliarios" class="info-box">
+        <h3>Fundos Imobiliários</h3>
+        <p>Investimentos no mercado imobiliário com rentabilidade passiva.</p>
+    </div>
+
+    <div id="criptomoedas" class="info-box">
+        <h3>Criptomoedas</h3>
+        <p>Investimentos em moedas digitais, com alta volatilidade e grandes riscos.</p>
+    </div>
+
+    <div id="tesouro_direto" class="info-box">
+        <h3>Tesouro Direto</h3>
+        <p>Investimentos no governo, seguros e com rentabilidade definida.</p>
+    </div>
+</div>
+
+<script>
+    function mostrarInfo(tipo) {
+        // Esconde todas as caixas de informações
+        var infos = document.querySelectorAll('.info-box');
+        infos.forEach(function(info) {
+            info.style.display = 'none';
+        });
+
+        // Mostra a caixa de informações selecionada
+        var infoBox = document.getElementById(tipo);
+        if (infoBox) {
+            infoBox.style.display = 'block';
+        }
+    }
+</script>
+
+</body>
+</html>
