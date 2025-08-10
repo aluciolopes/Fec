@@ -1,0 +1,241 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Desafio Econômico: O Jogo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+        }
+        .card {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease-in-out;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .btn {
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .btn-up:hover {
+            background-color: #28a745;
+            transform: scale(1.05);
+        }
+        .btn-down:hover {
+            background-color: #dc3545;
+            transform: scale(1.05);
+        }
+        .result-correct {
+            border: 4px solid #28a745;
+        }
+        .result-incorrect {
+            border: 4px solid #dc3545;
+        }
+        #feedback-modal {
+            transition: opacity 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-4xl mx-auto">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-800">Desafio Econômico</h1>
+            <p class="text-lg text-gray-600 mt-2">O Jogo da Bolsa de Valores</p>
+        </header>
+
+        <div id="game-area" class="grid md:grid-cols-2 gap-8">
+            <!-- Card da Empresa -->
+            <div id="company-card" class="card p-6 items-center text-center">
+                <div>
+                    <h2 class="text-2xl font-bold mb-4 text-gray-700">Empresa</h2>
+                    <div id="company-logo-container" class="mb-4 h-24 flex items-center justify-center">
+                       <!-- O logo da empresa será inserido aqui -->
+                    </div>
+                    <h3 id="company-name" class="text-xl font-semibold text-gray-900">Pressione "Sortear" para começar</h3>
+                    <p id="company-sector" class="text-md text-gray-500 mt-1"></p>
+                </div>
+                <p id="company-description" class="text-sm text-gray-600 mt-4"></p>
+            </div>
+
+            <!-- Card do Evento -->
+            <div id="event-card" class="card p-6 items-center text-center">
+                <div>
+                    <h2 class="text-2xl font-bold mb-4 text-gray-700">Evento Econômico</h2>
+                     <div id="event-image-container" class="mb-4 h-24 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-20 w-20 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                     </div>
+                    <h3 id="event-name" class="text-xl font-semibold text-gray-900">Aguardando sorteio...</h3>
+                </div>
+                <p id="event-impact" class="text-sm text-gray-600 mt-4"></p>
+            </div>
+        </div>
+
+        <!-- Controles e Placar -->
+        <div class="mt-8 text-center">
+            <button id="draw-button" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-lg text-lg hover:bg-blue-700 btn">
+                Sortear Nova Rodada
+            </button>
+            <div id="decision-buttons" class="mt-6 hidden">
+                <p class="text-lg font-medium text-gray-700 mb-4">Com este evento, a ação da empresa vai...</p>
+                <button id="up-button" class="bg-green-500 text-white font-bold py-3 px-10 rounded-lg text-xl mr-4 btn btn-up">
+                    SUBIR ▲
+                </button>
+                <button id="down-button" class="bg-red-500 text-white font-bold py-3 px-10 rounded-lg text-xl btn btn-down">
+                    CAIR ▼
+                </button>
+            </div>
+        </div>
+        
+        <div class="mt-8 text-center">
+            <p class="text-xl font-semibold text-gray-800">Placar: <span id="score" class="text-blue-600">0</span></p>
+        </div>
+    </div>
+
+    <!-- Modal de Feedback -->
+    <div id="feedback-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-lg shadow-xl p-8 max-w-md text-center">
+            <h3 id="feedback-title" class="text-3xl font-bold mb-4"></h3>
+            <p id="feedback-text" class="text-lg text-gray-700 mb-6"></p>
+            <button id="next-round-button" class="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 btn">
+                Próxima Rodada
+            </button>
+        </div>
+    </div>
+
+
+    <script>
+        // --- BANCO DE DADOS DO JOGO (VERSÃO 2.0) ---
+        const companies = [
+            { name: 'Petrobras (PETR4)', sector: 'Petróleo e Gás', description: 'Líder na exploração, produção e refino de petróleo e gás no Brasil.', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d7/Petrobras_logo.svg/200px-Petrobras_logo.svg.png' },
+            { name: 'Itaú (ITUB4)', sector: 'Bancário e Financeiro', description: 'Um dos maiores bancos privados do Brasil, com forte presença na América Latina.', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Itau_logo.svg/200px-Itau_logo.svg.png' },
+            { name: 'Vale (VALE3)', sector: 'Mineração', description: 'Um dos maiores produtores mundiais de minério de ferro, pelotas e níquel.', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/Vale_logo.svg/200px-Vale_logo.svg.png' },
+            { name: 'Magazine Luiza (MGLU3)', sector: 'Varejo', description: 'Uma das maiores redes de varejo do Brasil, com forte presença em e-commerce e lojas físicas.', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Magazine_Luiza_Logo.svg/200px-Magazine_Luiza_Logo.svg.png' },
+            { name: 'JBS (JBSS3)', sector: 'Alimentos - Produção de Carnes', description: 'Uma das maiores produtoras mundiais de carne bovina, suína e de frango.', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/JBS_S.A._logo.svg/200px-JBS_S.A._logo.svg.png' },
+            { name: 'Ambev (ABEV3)', sector: 'Bebidas e Alimentos', description: 'Maior fabricante de bebidas da América Latina, produzindo cerveja, refrigerantes e outras bebidas.', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/86/Ambev_logo.svg/200px-Ambev_logo.svg.png' },
+            { name: 'Bradesco (BBDC4)', sector: 'Bancário e Financeiro', description: 'Grande banco brasileiro que oferece serviços para clientes no Brasil e possui operações menores na América Latina e Ásia.', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/Bradesco_logo.svg/200px-Bradesco_logo.svg.png' },
+            { name: 'Eletrobras (ELET3)', sector: 'Energia Elétrica', description: 'Maior empresa de geração e transmissão de energia elétrica da América Latina.', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/06/Eletrobras_logo.svg/200px-Eletrobras_logo.svg.png' },
+            { name: 'B3 (B3SA3)', sector: 'Financeiro', description: 'Principal bolsa de valores do Brasil, operando mercados de ações, futuros, renda fixa e outros ativos.', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/59/B3_logo.svg/200px-B3_logo.svg.png' },
+            { name: 'Renner (LREN3)', sector: 'Varejo de Moda', description: 'Uma das maiores redes de lojas de roupas e acessórios do Brasil.', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8b/Lojas_Renner_logo.svg/200px-Lojas_Renner_logo.svg.png' },
+            { name: 'Gerdau (GGBR4)', sector: 'Siderurgia', description: 'Maior produtora de aço do Brasil, com operações significativas nas Américas e Europa.', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/ce/Gerdau_logo.svg/200px-Gerdau_logo.svg.png' },
+            { name: 'Suzano (SUZB3)', sector: 'Papel e Celulose', description: 'Um dos maiores produtores globais de celulose e papel.', logo: 'https://upload.wikimedia.org/wikipedia/pt/thumb/a/a4/Suzano_S.A._logo.svg/200px-Suzano_S.A._logo.svg.png' },
+            { name: 'Localiza (RENT3)', sector: 'Aluguel de Veículos', description: 'A maior locadora de veículos da América Latina.', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Localiza_logo.svg/200px-Localiza_logo.svg.png' },
+            { name: 'SLC Agrícola (SLCE3)', sector: 'Agricultura', description: 'Especializada na produção de soja, algodão e milho, com foco em exportação.', logo: 'https://www.slcagricola.com.br/wp-content/themes/slc/assets/img/logo-slc-agricola.png' },
+            { name: 'Natura &Co (NTCO3)', sector: 'Cosméticos e Bem-estar', description: 'Conglomerado de cosméticos que inclui Natura, Avon, The Body Shop e Aesop.', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/Natura_%26_Co_logo.svg/200px-Natura_%26_Co_logo.svg.png' },
+            { name: 'Weg (WEGE3)', sector: 'Bens de Capital', description: 'Multinacional brasileira, uma das maiores fabricantes de equipamentos elétricos do mundo.', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/WEG_logo.svg/200px-WEG_logo.svg.png' },
+            { name: 'Raia Drogasil (RADL3)', sector: 'Varejo Farmacêutico', description: 'Líder no mercado brasileiro de varejo farmacêutico, resultado da fusão entre Droga Raia e Drogasil.', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Raia_Drogasil_logo.svg/200px-Raia_Drogasil_logo.svg.png' },
+            { name: 'Cielo (CIEL3)', sector: 'Serviços Financeiros', description: 'Empresa líder em soluções de pagamentos eletrônicos na América Latina.', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Cielo_logo.svg/200px-Cielo_logo.svg.png' }
+        ];
+        const events = [
+            { name: 'Aumento da Taxa de Juros (Selic)', impact: 'O Banco Central decide aumentar a taxa de juros básica da economia.', effect: { 'Bancário e Financeiro': 'up', 'Varejo': 'down', 'Varejo de Moda': 'down', 'Aluguel de Veículos': 'down', 'Agricultura': 'down', 'Bens de Capital': 'down', 'Varejo Farmacêutico': 'down', 'Serviços Financeiros': 'down', 'Cosméticos e Bem-estar': 'down' } },
+            { name: 'Tensões no Oriente Médio', impact: 'Israel ameaça invadir o Irã e as tensões se intensificam no Oriente Médio.', effect: { 'Petróleo e Gás': 'up' } },
+            { name: 'Crescimento Negativo na China', impact: 'O Escritório Nacional de Estatística da China publica perspectivas negativas para o crescimento do país.', effect: { 'Mineração': 'down', 'Siderurgia': 'down', 'Agricultura': 'down', 'Alimentos - Produção de Carnes': 'down', 'Papel e Celulose': 'down', 'Bens de Capital': 'down' } },
+            { name: 'Desvalorização do Câmbio', impact: 'Forte saída de dólares faz a moeda nacional se desvalorizar em relação ao dólar.', effect: { 'Mineração': 'up', 'Siderurgia': 'up', 'Agricultura': 'up', 'Alimentos - Produção de Carnes': 'up', 'Papel e Celulose': 'up', 'Petróleo e Gás': 'up', 'Bens de Capital': 'up' } },
+            { name: 'Aumento do Salário Mínimo', impact: 'O governo anuncia um aumento significativo no salário mínimo.', effect: { 'Varejo': 'up', 'Varejo de Moda': 'up', 'Bebidas e Alimentos': 'up', 'Varejo Farmacêutico': 'up', 'Cosméticos e Bem-estar': 'up' } },
+            { name: 'Pandemia Global', impact: 'Uma nova pandemia global afeta drasticamente as economias mundiais.', effect: { 'Varejo': 'up', 'Petróleo e Gás': 'down', 'Aluguel de Veículos': 'down', 'Varejo de Moda': 'down', 'Varejo Farmacêutico': 'up' } },
+            { name: 'Crise Imobiliária', impact: 'Estouro de uma bolha no mercado imobiliário causa perdas em bancos e setores relacionados.', effect: { 'Bancário e Financeiro': 'down', 'Siderurgia': 'down' } },
+            { name: 'Surto de Doenças em Rebanhos', impact: 'Ocorrência de doenças afeta rebanhos, causando perdas de produção e restrições comerciais.', effect: { 'Alimentos - Produção de Carnes': 'down' } },
+            { name: 'Inflação Mais Alta', impact: 'O mercado ajusta projeções e passa a ver uma inflação mais alta no Brasil.', effect: { 'Bancário e Financeiro': 'up', 'Varejo': 'down', 'Varejo de Moda': 'down', 'Cosméticos e Bem-estar': 'down' } },
+            { name: 'Crise Hídrica e Racionamento de Energia', impact: 'Níveis baixos nos reservatórios forçam o governo a adotar medidas de racionamento de energia.', effect: { 'Energia Elétrica': 'up', 'Agricultura': 'down', 'Siderurgia': 'down', 'Bens de Capital': 'down', 'Alimentos - Produção de Carnes': 'down' } },
+            { name: 'Aprovação de Reforma Tributária', impact: 'O Congresso aprova uma reforma que simplifica impostos sobre o consumo.', effect: { 'Varejo': 'up', 'Varejo de Moda': 'up', 'Bebidas e Alimentos': 'up', 'Bens de Capital': 'up', 'Bancário e Financeiro': 'down', 'Serviços Financeiros': 'up' } },
+            { name: 'Novas Regulações Ambientais', impact: 'O governo impõe regras ambientais mais rígidas para setores de alto impacto.', effect: { 'Mineração': 'down', 'Siderurgia': 'down', 'Petróleo e Gás': 'down', 'Alimentos - Produção de Carnes': 'down', 'Papel e Celulose': 'down', 'Cosméticos e Bem-estar': 'up' } },
+            { name: 'Boom de Commodities Agrícolas', impact: 'A demanda global e o clima favorável elevam os preços da soja e do milho.', effect: { 'Agricultura': 'up', 'Alimentos - Produção de Carnes': 'up', 'Bens de Capital': 'up' } }
+        ];
+
+        // --- LÓGICA DO JOGO ---
+        let score = 0;
+        let currentCompany;
+        let currentEvent;
+        const scoreEl = document.getElementById('score');
+        const drawButton = document.getElementById('draw-button');
+        const decisionButtons = document.getElementById('decision-buttons');
+        const upButton = document.getElementById('up-button');
+        const downButton = document.getElementById('down-button');
+        const companyCard = document.getElementById('company-card');
+        const companyNameEl = document.getElementById('company-name');
+        const companySectorEl = document.getElementById('company-sector');
+        const companyDescriptionEl = document.getElementById('company-description');
+        const companyLogoContainer = document.getElementById('company-logo-container');
+        const eventCard = document.getElementById('event-card');
+        const eventNameEl = document.getElementById('event-name');
+        const eventImpactEl = document.getElementById('event-impact');
+        const feedbackModal = document.getElementById('feedback-modal');
+        const feedbackTitle = document.getElementById('feedback-title');
+        const feedbackText = document.getElementById('feedback-text');
+        const nextRoundButton = document.getElementById('next-round-button');
+        drawButton.addEventListener('click', startNewRound);
+        upButton.addEventListener('click', () => checkAnswer('up'));
+        downButton.addEventListener('click', () => checkAnswer('down'));
+        nextRoundButton.addEventListener('click', hideFeedback);
+        function startNewRound() {
+            currentCompany = companies[Math.floor(Math.random() * companies.length)];
+            currentEvent = events[Math.floor(Math.random() * events.length)];
+            companyNameEl.textContent = currentCompany.name;
+            companySectorEl.textContent = `Setor: ${currentCompany.sector}`;
+            companyDescriptionEl.textContent = currentCompany.description;
+            companyLogoContainer.innerHTML = `<img src="${currentCompany.logo}" alt="Logo ${currentCompany.name}" class="max-h-20 object-contain" onerror="this.onerror=null;this.src='https://placehold.co/200x80/e2e8f0/e2e8f0?text=Logo';">`;
+            eventNameEl.textContent = currentEvent.name;
+            eventImpactEl.textContent = currentEvent.impact;
+            drawButton.classList.add('hidden');
+            decisionButtons.classList.remove('hidden');
+            companyCard.classList.remove('result-correct', 'result-incorrect');
+            eventCard.classList.remove('result-correct', 'result-incorrect');
+        }
+        function checkAnswer(playerChoice) {
+            const correctAnswer = currentEvent.effect[currentCompany.sector] || 'neutral';
+            let explanation = '';
+            if (playerChoice === correctAnswer) {
+                score++;
+                feedbackTitle.textContent = 'Correto! 🎉';
+                feedbackTitle.className = 'text-3xl font-bold mb-4 text-green-500';
+                companyCard.classList.add('result-correct');
+                eventCard.classList.add('result-correct');
+                explanation = `Você acertou! O evento "${currentEvent.name}" tende a ser **positivo** para o setor de "${currentCompany.sector}".`;
+                if (correctAnswer === 'down') {
+                   explanation = `Você acertou! O evento "${currentEvent.name}" tende a ser **negativo** para o setor de "${currentCompany.sector}".`;
+                }
+            } else if (correctAnswer === 'neutral') {
+                feedbackTitle.textContent = 'Impacto Neutro 🤔';
+                feedbackTitle.className = 'text-3xl font-bold mb-4 text-gray-500';
+                explanation = `Este evento não tem um impacto direto e claro no setor de "${currentCompany.sector}". A relação é complexa. Não vamos contar pontos desta vez.`;
+            } else {
+                score = Math.max(0, score - 1);
+                feedbackTitle.textContent = 'Incorreto 🙁';
+                feedbackTitle.className = 'text-3xl font-bold mb-4 text-red-500';
+                companyCard.classList.add('result-incorrect');
+                eventCard.classList.add('result-incorrect');
+                let direction = correctAnswer === 'up' ? 'subir' : 'cair';
+                explanation = `Na verdade, o evento "${currentEvent.name}" tende a fazer as ações do setor de "${currentCompany.sector}" **${direction}**.`;
+            }
+            scoreEl.textContent = score;
+            feedbackText.innerHTML = explanation;
+            showFeedback();
+        }
+        function showFeedback() {
+            feedbackModal.classList.remove('hidden');
+            feedbackModal.classList.add('flex');
+            void feedbackModal.offsetWidth; 
+            feedbackModal.style.opacity = 1;
+        }
+        function hideFeedback() {
+             feedbackModal.style.opacity = 0;
+             setTimeout(() => {
+                feedbackModal.classList.add('hidden');
+                feedbackModal.classList.remove('flex');
+                startNewRound();
+             }, 300);
+        }
+    </script>
+</body>
+</html>
