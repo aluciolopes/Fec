@@ -1,0 +1,309 @@
+!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Desafio Econômico: Versão Aperfeiçoada</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+        }
+        .card {
+            background-color: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease-in-out;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .btn {
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-radius: 12px;
+        }
+        .btn-up:hover {
+            background-color: #16a34a; /* green-600 */
+            transform: scale(1.05);
+        }
+        .btn-down:hover {
+            background-color: #dc2626; /* red-600 */
+            transform: scale(1.05);
+        }
+        #feedback-modal {
+            transition: opacity 0.3s ease-in-out;
+        }
+        .score-box {
+            background: white;
+            padding: 8px 16px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+        }
+        /* Animações */
+        @keyframes pulse-correct {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        @keyframes shake-incorrect {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        .animate-pulse-correct { animation: pulse-correct 0.5s ease-in-out; }
+        .animate-shake-incorrect { animation: shake-incorrect 0.5s ease-in-out; }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-4xl mx-auto">
+        <header class="text-center mb-6">
+            <h1 class="text-5xl font-extrabold text-gray-800">Desafio Econômico</h1>
+            <p class="text-xl text-gray-600 mt-2">O Jogo da Bolsa de Valores</p>
+        </header>
+
+        <!-- Placar -->
+        <div class="flex justify-center gap-4 mb-6 text-center">
+            <div class="score-box">
+                <p class="text-sm font-bold text-gray-500">RECORDE</p>
+                <p id="high-score" class="text-2xl font-bold text-yellow-500">0</p>
+            </div>
+            <div class="score-box">
+                <p class="text-sm font-bold text-gray-500">PONTOS</p>
+                <p id="score" class="text-2xl font-bold text-blue-600">0</p>
+            </div>
+             <div class="score-box">
+                <p class="text-sm font-bold text-gray-500">SEQUÊNCIA</p>
+                <p id="streak" class="text-2xl font-bold text-green-500">0x</p>
+            </div>
+        </div>
+
+        <div id="game-area" class="grid md:grid-cols-2 gap-8">
+            <!-- Card da Empresa -->
+            <div id="company-card" class="card p-6 items-center text-center">
+                <div>
+                    <h2 class="text-2xl font-bold mb-4 text-gray-700">Empresa</h2>
+                    <div id="company-logo-container" class="mb-4 h-24 flex items-center justify-center">
+                       <p class="text-gray-400">Clique em "Sortear"</p>
+                    </div>
+                    <h3 id="company-name" class="text-xl font-semibold text-gray-900">Pressione "Sortear" para começar</h3>
+                    <p id="company-sector" class="text-md text-gray-500 mt-1"></p>
+                </div>
+                <p id="company-description" class="text-sm text-gray-600 mt-4"></p>
+            </div>
+
+            <!-- Card do Evento -->
+            <div id="event-card" class="card p-6 items-center text-center">
+                <div>
+                    <h2 class="text-2xl font-bold mb-4 text-gray-700">Evento Econômico</h2>
+                     <div id="event-image-container" class="mb-4 h-24 flex items-center justify-center text-gray-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-20 w-20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                     </div>
+                    <h3 id="event-name" class="text-xl font-semibold text-gray-900">Aguardando sorteio...</h3>
+                </div>
+                <p id="event-impact" class="text-sm text-gray-600 mt-4"></p>
+            </div>
+        </div>
+
+        <!-- Controles -->
+        <div class="mt-8 text-center">
+            <button id="draw-button" class="bg-blue-600 text-white font-bold py-3 px-8 text-lg hover:bg-blue-700 btn">
+                Sortear Nova Rodada
+            </button>
+            <div id="decision-buttons" class="mt-6 hidden">
+                <p class="text-lg font-medium text-gray-700 mb-4">Com este evento, a ação da empresa vai...</p>
+                <button id="up-button" class="bg-green-500 text-white font-bold py-3 px-10 text-xl mr-4 btn btn-up">
+                    SUBIR ▲
+                </button>
+                <button id="down-button" class="bg-red-500 text-white font-bold py-3 px-10 text-xl btn btn-down">
+                    CAIR ▼
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Feedback -->
+    <div id="feedback-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden opacity-0">
+        <div id="feedback-content" class="bg-white rounded-lg shadow-xl p-8 max-w-md text-center transform scale-95 transition-all duration-300">
+            <h3 id="feedback-title" class="text-3xl font-bold mb-4"></h3>
+            <p id="feedback-explanation" class="text-lg text-gray-700 mb-2"></p>
+            <p id="feedback-reason" class="text-sm text-gray-500 bg-gray-100 p-3 rounded-lg mb-6"></p>
+            <button id="next-round-button" class="bg-blue-600 text-white font-bold py-2 px-6 hover:bg-blue-700 btn">
+                Próxima Rodada
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- BANCO DE DADOS DO JOGO (VERSÃO 3.0) ---
+        const companies = [
+            { name: 'Petrobras (PETR4)', sector: 'Petróleo e Gás', description: 'Líder na exploração, produção e refino de petróleo e gás no Brasil.', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d7/Petrobras_logo.svg/200px-Petrobras_logo.svg.png' },
+            { name: 'Itaú (ITUB4)', sector: 'Bancário e Financeiro', description: 'Um dos maiores bancos privados do Brasil, com forte presença na América Latina.', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Itau_logo.svg/200px-Itau_logo.svg.png' },
+            { name: 'Vale (VALE3)', sector: 'Mineração', description: 'Um dos maiores produtores mundiais de minério de ferro, pelotas e níquel.', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/Vale_logo.svg/200px-Vale_logo.svg.png' },
+            { name: 'Magazine Luiza (MGLU3)', sector: 'Varejo', description: 'Uma das maiores redes de varejo do Brasil, com forte presença em e-commerce e lojas físicas.', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Magazine_Luiza_Logo.svg/200px-Magazine_Luiza_Logo.svg.png' },
+            { name: 'JBS (JBSS3)', sector: 'Alimentos - Produção de Carnes', description: 'Uma das maiores produtoras mundiais de carne bovina, suína e de frango.', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/JBS_S.A._logo.svg/200px-JBS_S.A._logo.svg.png' },
+            { name: 'Ambev (ABEV3)', sector: 'Bebidas e Alimentos', description: 'Maior fabricante de bebidas da América Latina.', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/86/Ambev_logo.svg/200px-Ambev_logo.svg.png' },
+            { name: 'Eletrobras (ELET3)', sector: 'Energia Elétrica', description: 'Maior empresa de geração e transmissão de energia elétrica da América Latina.', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/06/Eletrobras_logo.svg/200px-Eletrobras_logo.svg.png' },
+            { name: 'Renner (LREN3)', sector: 'Varejo de Moda', description: 'Uma das maiores redes de lojas de roupas e acessórios do Brasil.', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8b/Lojas_Renner_logo.svg/200px-Lojas_Renner_logo.svg.png' },
+            { name: 'Gerdau (GGBR4)', sector: 'Siderurgia', description: 'Maior produtora de aço do Brasil, com operações significativas nas Américas e Europa.', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/ce/Gerdau_logo.svg/200px-Gerdau_logo.svg.png' },
+            { name: 'Suzano (SUZB3)', sector: 'Papel e Celulose', description: 'Um dos maiores produtores globais de celulose e papel.', logo: 'https://upload.wikimedia.org/wikipedia/pt/thumb/a/a4/Suzano_S.A._logo.svg/200px-Suzano_S.A._logo.svg.png' },
+            { name: 'Localiza (RENT3)', sector: 'Aluguel de Veículos', description: 'A maior locadora de veículos da América Latina.', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Localiza_logo.svg/200px-Localiza_logo.svg.png' },
+            { name: 'SLC Agrícola (SLCE3)', sector: 'Agricultura', description: 'Especializada na produção de soja, algodão e milho, com foco em exportação.', logo: 'https://www.slcagricola.com.br/wp-content/themes/slc/assets/img/logo-slc-agricola.png' },
+            { name: 'Natura &Co (NTCO3)', sector: 'Cosméticos e Bem-estar', description: 'Conglomerado de cosméticos que inclui Natura, Avon, The Body Shop e Aesop.', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/Natura_%26_Co_logo.svg/200px-Natura_%26_Co_logo.svg.png' },
+            { name: 'Weg (WEGE3)', sector: 'Bens de Capital', description: 'Multinacional brasileira, uma das maiores fabricantes de equipamentos elétricos do mundo.', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/WEG_logo.svg/200px-WEG_logo.svg.png' },
+            { name: 'Raia Drogasil (RADL3)', sector: 'Varejo Farmacêutico', description: 'Líder no mercado brasileiro de varejo farmacêutico.', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Raia_Drogasil_logo.svg/200px-Raia_Drogasil_logo.svg.png' },
+            { name: 'Cielo (CIEL3)', sector: 'Serviços Financeiros', description: 'Empresa líder em soluções de pagamentos eletrônicos na América Latina.', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Cielo_logo.svg/200px-Cielo_logo.svg.png' }
+        ];
+        const events = [
+            { name: 'Aumento da Taxa de Juros (Selic)', impact: 'O Banco Central decide aumentar a taxa de juros básica da economia.', effect: { 'Bancário e Financeiro': 'up', 'Varejo': 'down', 'Varejo de Moda': 'down', 'Aluguel de Veículos': 'down', 'Bens de Capital': 'down', 'Serviços Financeiros': 'down', 'Cosméticos e Bem-estar': 'down' }, explanation: 'Juros altos encarecem o crédito, desestimulando o consumo e investimentos, mas aumentam a rentabilidade dos bancos.', icon: '<svg xmlns="http://www.w3.org/2000/svg" class="h-20 w-20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>' },
+            { name: 'Desvalorização do Câmbio', impact: 'Forte saída de dólares faz a moeda nacional se desvalorizar em relação ao dólar.', effect: { 'Mineração': 'up', 'Siderurgia': 'up', 'Agricultura': 'up', 'Alimentos - Produção de Carnes': 'up', 'Papel e Celulose': 'up', 'Petróleo e Gás': 'up', 'Bens de Capital': 'up' }, explanation: 'Empresas exportadoras recebem em dólar, aumentando sua receita em reais. Importadores são prejudicados.', icon: '<svg xmlns="http://www.w3.org/2000/svg" class="h-20 w-20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v.01" /></svg>' },
+            { name: 'Crescimento Negativo na China', impact: 'A China, grande parceiro comercial, anuncia perspectivas negativas para seu crescimento.', effect: { 'Mineração': 'down', 'Siderurgia': 'down', 'Agricultura': 'down', 'Alimentos - Produção de Carnes': 'down' }, explanation: 'A China é um dos maiores compradores de commodities do mundo. Sua desaceleração reduz a demanda por esses produtos.', icon: '<svg xmlns="http://www.w3.org/2000/svg" class="h-20 w-20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.657 7.343A8 8 0 0117.657 18.657z" /><path stroke-linecap="round" stroke-linejoin="round" d="M9.879 16.121A3 3 0 1014.12 11.88" /></svg>' },
+            { name: 'Aumento do Salário Mínimo', impact: 'O governo anuncia um aumento significativo no salário mínimo.', effect: { 'Varejo': 'up', 'Varejo de Moda': 'up', 'Bebidas e Alimentos': 'up', 'Cosméticos e Bem-estar': 'up' }, explanation: 'Com mais dinheiro em circulação, a população tende a consumir mais, beneficiando o varejo em geral.', icon: '<svg xmlns="http://www.w3.org/2000/svg" class="h-20 w-20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>' },
+            { name: 'Crise Hídrica e Racionamento', impact: 'Níveis baixos nos reservatórios forçam medidas de racionamento de energia.', effect: { 'Energia Elétrica': 'up', 'Agricultura': 'down', 'Siderurgia': 'down' }, explanation: 'Empresas de energia podem se beneficiar com tarifas mais altas, mas a indústria e o agronegócio sofrem com a falta de água e energia.', icon: '<svg xmlns="http://www.w3.org/2000/svg" class="h-20 w-20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>' },
+            { name: 'Boom de Commodities Agrícolas', impact: 'A demanda global e o clima favorável elevam os preços da soja e do milho.', effect: { 'Agricultura': 'up', 'Alimentos - Produção de Carnes': 'up', 'Bens de Capital': 'up' }, explanation: 'O setor agrícola lucra com preços altos, o que impulsiona a compra de máquinas e a produção de carnes (ração).', icon: '<svg xmlns="http://www.w3.org/2000/svg" class="h-20 w-20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" /></svg>' }
+        ];
+
+        // --- LÓGICA DO JOGO ---
+        let score = 0;
+        let streak = 0;
+        let highScore = localStorage.getItem('economicChallengeHighScore') || 0;
+        let currentCompany;
+        let currentEvent;
+        let soundEnabled = false;
+        const scoreEl = document.getElementById('score');
+        const streakEl = document.getElementById('streak');
+        const highScoreEl = document.getElementById('high-score');
+        const drawButton = document.getElementById('draw-button');
+        const decisionButtons = document.getElementById('decision-buttons');
+        const upButton = document.getElementById('up-button');
+        const downButton = document.getElementById('down-button');
+        const companyCard = document.getElementById('company-card');
+        const companyNameEl = document.getElementById('company-name');
+        const companySectorEl = document.getElementById('company-sector');
+        const companyDescriptionEl = document.getElementById('company-description');
+        const companyLogoContainer = document.getElementById('company-logo-container');
+        const eventCard = document.getElementById('event-card');
+        const eventNameEl = document.getElementById('event-name');
+        const eventImpactEl = document.getElementById('event-impact');
+        const eventImageContainer = document.getElementById('event-image-container');
+        const feedbackModal = document.getElementById('feedback-modal');
+        const feedbackContent = document.getElementById('feedback-content');
+        const feedbackTitle = document.getElementById('feedback-title');
+        const feedbackExplanation = document.getElementById('feedback-explanation');
+        const feedbackReason = document.getElementById('feedback-reason');
+        const nextRoundButton = document.getElementById('next-round-button');
+        let synth, correctSynth, incorrectSynth;
+        
+        function setupAudio() {
+            if (soundEnabled) return;
+            Tone.start();
+            synth = new Tone.Synth().toDestination();
+            correctSynth = new Tone.Synth({ oscillator: { type: 'sine' }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.2, release: 0.2 } }).toDestination();
+            incorrectSynth = new Tone.FMSynth({ harmonicity: 3, modulationIndex: 10, detune: 0, oscillator: { type: 'sine' }, envelope: { attack: 0.01, decay: 0.4, sustain: 0.01, release: 0.4 }, modulation: { type: 'square' }, modulationEnvelope: { attack: 0.4, decay: 0, sustain: 1, release: 0.4 } }).toDestination();
+            soundEnabled = true;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            highScoreEl.textContent = highScore;
+            scoreEl.textContent = score;
+            streakEl.textContent = `${streak}x`;
+        });
+
+        drawButton.addEventListener('click', () => {
+            if (!soundEnabled) setupAudio();
+            synth.triggerAttackRelease('C4', '8n');
+            startNewRound();
+        });
+        upButton.addEventListener('click', () => {
+            synth.triggerAttackRelease('C4', '8n');
+            checkAnswer('up');
+        });
+        downButton.addEventListener('click', () => {
+            synth.triggerAttackRelease('C4', '8n');
+            checkAnswer('down');
+        });
+        nextRoundButton.addEventListener('click', hideFeedback);
+
+        function startNewRound() {
+            currentCompany = companies[Math.floor(Math.random() * companies.length)];
+            currentEvent = events[Math.floor(Math.random() * events.length)];
+            companyNameEl.textContent = currentCompany.name;
+            companySectorEl.textContent = `Setor: ${currentCompany.sector}`;
+            companyDescriptionEl.textContent = currentCompany.description;
+            companyLogoContainer.innerHTML = `<img src="${currentCompany.logo}" alt="Logo ${currentCompany.name}" class="max-h-20 object-contain" onerror="this.onerror=null;this.src='https://placehold.co/200x80/e2e8f0/e2e8f0?text=Logo';">`;
+            eventNameEl.textContent = currentEvent.name;
+            eventImpactEl.textContent = currentEvent.impact;
+            eventImageContainer.innerHTML = currentEvent.icon;
+            drawButton.classList.add('hidden');
+            decisionButtons.classList.remove('hidden');
+            companyCard.className = 'card p-6 items-center text-center';
+            eventCard.className = 'card p-6 items-center text-center';
+        }
+
+        function checkAnswer(playerChoice) {
+            const correctAnswer = currentEvent.effect[currentCompany.sector] || 'neutral';
+            const points = (streak >= 2 ? 2 : 1) * 100;
+            let explanationText = '';
+            let reasonText = currentEvent.explanation;
+
+            if (playerChoice === correctAnswer) {
+                score += points;
+                streak++;
+                correctSynth.triggerAttackRelease('C5', '8n', Tone.now());
+                correctSynth.triggerAttackRelease('G5', '8n', Tone.now() + 0.1);
+                feedbackTitle.textContent = `Correto! +${points} 🎉`;
+                feedbackTitle.className = 'text-3xl font-bold mb-4 text-green-500';
+                companyCard.classList.add('animate-pulse-correct');
+                explanationText = `Você acertou! O evento "${currentEvent.name}" tende a ser **${correctAnswer === 'up' ? 'positivo' : 'negativo'}** para o setor de "${currentCompany.sector}".`;
+            } else if (correctAnswer === 'neutral') {
+                streak = 0;
+                synth.triggerAttackRelease('E4', '8n');
+                feedbackTitle.textContent = 'Impacto Neutro 🤔';
+                feedbackTitle.className = 'text-3xl font-bold mb-4 text-gray-500';
+                explanationText = `Este evento não tem um impacto direto e claro no setor de "${currentCompany.sector}". A relação é complexa. Sem pontos desta vez.`;
+            } else {
+                streak = 0;
+                incorrectSynth.triggerAttackRelease('C3', '4n');
+                feedbackTitle.textContent = 'Incorreto 🙁';
+                feedbackTitle.className = 'text-3xl font-bold mb-4 text-red-500';
+                companyCard.classList.add('animate-shake-incorrect');
+                let direction = correctAnswer === 'up' ? 'subir' : 'cair';
+                explanationText = `Na verdade, o evento "${currentEvent.name}" tende a fazer as ações do setor de "${currentCompany.sector}" **${direction}**.`;
+            }
+
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('economicChallengeHighScore', highScore);
+            }
+
+            scoreEl.textContent = score;
+            highScoreEl.textContent = highScore;
+            streakEl.textContent = `${streak}x`;
+            feedbackExplanation.innerHTML = explanationText;
+            feedbackReason.textContent = reasonText;
+            showFeedback();
+        }
+
+        function showFeedback() {
+            decisionButtons.classList.add('hidden');
+            feedbackModal.classList.remove('hidden');
+            setTimeout(() => {
+                feedbackModal.style.opacity = 1;
+                feedbackContent.style.transform = 'scale(1)';
+            }, 10);
+        }
+        
+        function hideFeedback() {
+             feedbackModal.style.opacity = 0;
+             feedbackContent.style.transform = 'scale(0.95)';
+             setTimeout(() => {
+                feedbackModal.classList.add('hidden');
+                drawButton.classList.remove('hidden');
+             }, 300);
+        }
+    </script>
+</body>
+</html>
