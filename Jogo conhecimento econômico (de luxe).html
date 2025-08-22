@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Quiz de Economia (Versão Final)</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        #quiz-container {
+            background-color: #fff;
+            border-radius: 15px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 750px;
+            overflow: hidden;
+        }
+        #quiz-header {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            padding: 25px;
+            text-align: center;
+            position: relative;
+        }
+        #timer {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            font-size: 1.3em;
+            font-weight: bold;
+            background-color: rgba(255,255,255,0.25);
+            padding: 5px 12px;
+            border-radius: 20px;
+        }
+        h2 { margin: 0; font-size: 1.8em; }
+        #question-area { padding: 25px; }
+        #question-category {
+            font-size: 0.9em;
+            font-weight: bold;
+            color: #007bff;
+            text-transform: uppercase;
+            margin-bottom: 15px;
+            letter-spacing: 0.5px;
+        }
+        #question-text { font-size: 1.25em; margin-bottom: 25px; line-height: 1.5; }
+        .options-list { list-style: none; padding: 0; margin: 0; }
+        .option-item {
+            background-color: #f8f9fa;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+        }
+        .option-item:hover { background-color: #e9ecef; transform: translateY(-2px); }
+        .option-item.selected { background-color: #cce5ff; border-color: #007bff; font-weight: bold; }
+        .option-item.correct { background-color: #d4edda; border-color: #28a745; color: #155724; font-weight: bold; }
+        .option-item.incorrect { background-color: #f8d7da; border-color: #dc3545; color: #721c24; font-weight: bold; }
+        #feedback-area {
+            padding: 20px 25px;
+            border-top: 1px solid #eee;
+        }
+        #explanation-text { font-size: 1em; color: #333; }
+        #score-feedback {
+            font-weight: bold;
+            color: #28a745;
+            margin-left: 15px;
+        }
+        #action-btn {
+            background: linear-gradient(135deg, #28a745, #218838);
+            color: white;
+            font-weight: bold;
+            border: none;
+            width: 100%;
+            padding: 18px;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: filter 0.2s;
+        }
+        #action-btn:hover { filter: brightness(1.1); }
+        #action-btn:disabled { background: #ccc; cursor: not-allowed; filter: none; }
+        #results-area { padding: 30px; text-align: center; }
+        .action-button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            margin: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.2s;
+        }
+        .action-button:hover { background-color: #0056b3; }
+    </style>
+</head>
+<body>
+
+<div id="quiz-container">
+    <div id="quiz-header">
+        <div id="timer">30</div>
+        <h2>Super Quiz de Economia</h2>
+    </div>
+    <div id="question-area" style="display: none;">
+        <p id="question-category"></p>
+        <p id="question-text"></p>
+        <ul id="options" class="options-list"></ul>
+    </div>
+    <div id="feedback-area" style="display: none;">
+        <span id="explanation-text"></span>
+        <span id="score-feedback"></span>
+    </div>
+    <div id="results-area" style="display: none;">
+        <h3>Quiz Finalizado!</h3>
+        <p>Sua pontuação final é:</p>
+        <p id="score" style="font-size: 2.5em; font-weight: bold; color: #007bff;"></p>
+        <button id="review-btn" class="action-button">Rever Respostas</button>
+        <button id="restart-btn" class="action-button">Recomeçar</button>
+    </div>
+    <div id="review-area" style="display: none;"></div>
+    <button id="action-btn">Iniciar Quiz</button>
+</div>
+
+<audio id="correct-sound" src="https://actions.google.com/sounds/v1/positive/success.ogg" preload="auto"></audio>
+<audio id="incorrect-sound" src="https://actions.google.com/sounds/v1/impacts/crash.ogg" preload="auto"></audio>
+
+<script>
+    const quizData = [
+        // As 20 questões estão aqui
+        { category: "Contas Nacionais", question: "Qual das seguintes opções NÃO é uma das três óticas de cálculo do PIB?", options: ["Ótica da Renda", "Ótica da Produção", "Ótica da Despesa", "Ótica da Inflação"], answer: "Ótica da Inflação", explanation: "O PIB pode ser medido pela soma das produções, rendas ou despesas. A inflação é um índice de preços, não uma ótica de cálculo." },
+        { category: "Economia Aberta", question: "O modelo Mundell-Fleming é uma extensão do modelo IS-LM para analisar o quê?", options: ["Economias fechadas", "Decisões de empresas individuais", "Pequenas economias abertas com mobilidade de capitais", "Apenas o mercado de trabalho"], answer: "Pequenas economias abertas com mobilidade de capitais", explanation: "Mundell-Fleming incorpora o balanço de pagamentos para analisar como políticas afetam economias abertas." },
+        { category: "Economia Comportamental", question: "O que são 'heurísticas' no contexto da economia comportamental?", options: ["Regras complexas para decisões ótimas", "Leis governamentais", "Atalhos mentais que usamos para tomar decisões rápidas", "Cálculos de maximização de utilidade"], answer: "Atalhos mentais que usamos para tomar decisões rápidas", explanation: "Heurísticas são 'regras de bolso' que nosso cérebro usa para simplificar decisões, o que pode levar a vieses." },
+        { category: "Política Fiscal", question: "O que significa um 'défice orçamental'?", options: ["Quando o governo arrecada mais do que gasta", "Quando as exportações são maiores que as importações", "Quando as despesas do governo são maiores que as suas receitas", "Quando a taxa de juros está a zero"], answer: "Quando as despesas do governo são maiores que as suas receitas", explanation: "Ocorre um défice quando o governo gasta mais do que arrecada, precisando de se financiar através da emissão de dívida." },
+        { category: "Sistema Monetário", question: "Qual é o objetivo do Banco Central ao definir as reservas compulsórias?", options: ["Aumentar os lucros dos bancos", "Controlar a capacidade dos bancos de criar moeda (liquidez)", "Financiar os gastos do governo", "Incentivar a população a não usar bancos"], answer: "Controlar a capacidade dos bancos de criar moeda (liquidez)", explanation: "Ao exigir que uma percentagem dos depósitos seja guardada, o BC limita o montante que os bancos podem emprestar, controlando a oferta de moeda." },
+        { category: "Teoria Clássica", question: "A 'mão invisível' de Adam Smith refere-se a:", options: ["Uma intervenção direta do governo", "A ideia de que a busca do autointeresse individual pode levar a bons resultados para a sociedade", "Uma teoria sobre a distribuição de renda", "A necessidade de planeamento central"], answer: "A ideia de que a busca do autointeresse individual pode levar a bons resultados para a sociedade", explanation: "Smith argumentava que, ao buscarem os seus próprios interesses, os indivíduos promovem o bem-estar económico geral." },
+        { category: "Desenvolvimento Social", question: "Verdadeiro ou Falso: O conceito de pobreza multidimensional considera apenas a insuficiência de renda.", options: ["Verdadeiro", "Falso"], answer: "Falso", explanation: "A pobreza multidimensional inclui privações em áreas como saúde e educação para uma análise mais completa do bem-estar." },
+        { category: "Modelo DA-OA", question: "O que causa um deslocamento da curva de Demanda Agregada para a direita?", options: ["Uma política monetária restritiva", "Um aumento de impostos", "Um aumento no otimismo dos consumidores e investidores", "Uma diminuição dos gastos do governo"], answer: "Um aumento no otimismo dos consumidores e investidores", explanation: "Otimismo leva a um aumento do consumo e do investimento, o que aumenta a demanda total por bens e serviços." },
+        { category: "Fundamentos da Macroeconomia", question: "Qual dos seguintes NÃO é um objetivo principal da política macroeconómica?", options: ["Crescimento da produção.", "Garantir lucros máximos para todas as empresas privadas.", "Nível de emprego elevado.", "Estabilidade de preços."], answer: "Garantir lucros máximos para todas as empresas privadas.", explanation: "A política macroeconómica foca em agregados como PIB, emprego e inflação. A maximização de lucros é um objetivo microeconómico." },
+        { category: "Modelo DA-OA", question: "Verdadeiro ou Falso: O equilíbrio de longo prazo ocorre quando o PIB real está no PIB potencial.", options: ["Verdadeiro", "Falso"], answer: "Verdadeiro", explanation: "O equilíbrio de longo prazo representa a economia a operar na sua capacidade máxima sustentável, que é o PIB potencial." },
+        { category: "Política Fiscal", question: "Um governo que deseja implementar uma política fiscal expansionista deveria:", options: ["Aumentar impostos e diminuir gastos.", "Diminuir impostos e aumentar gastos.", "Aumentar a taxa de juros.", "Diminuir exportações líquidas."], answer: "Diminuir impostos e aumentar gastos.", explanation: "Uma política fiscal expansionista visa aumentar a demanda agregada, o que é alcançado injetando mais dinheiro na economia." },
+        { category: "Teoria Clássica", question: "Qual economista é mais associado à Teoria das Vantagens Comparativas?", options: ["Adam Smith", "Karl Marx", "David Ricardo", "Jean-Baptiste Say"], answer: "David Ricardo", explanation: "David Ricardo formulou a Teoria das Vantagens Comparativas, argumentando que o comércio internacional é benéfico para todos." },
+        { category: "Teoria Marxista", question: "Verdadeiro ou Falso: Segundo Karl Marx, a 'mais-valia' é o salário pago ao trabalhador.", options: ["Verdadeiro", "Falso"], answer: "Falso", explanation: "A mais-valia é o valor gerado pelo trabalho que NÃO é pago ao trabalhador, sendo apropriado pelo capitalista." },
+        { category: "Economia Comportamental", question: "O conceito de 'aversão à perda' sugere que:", options: ["A dor de uma perda é sentida mais intensamente do que o prazer de um ganho igual.", "Pessoas são sempre racionais.", "Incentivos monetários sempre funcionam.", "Pessoas valorizam um bem da mesma forma, quer o possuam ou não."], answer: "A dor de uma perda é sentida mais intensamente do que o prazer de um ganho igual.", explanation: "A aversão à perda é um viés cognitivo que explica por que as pessoas são avessas ao risco quando se trata de perdas." },
+        { category: "Contas Nacionais", question: "O Produto Interno Bruto (PIB) é definido como:", options: ["A soma de toda a riqueza de um país.", "O valor de mercado de todos os bens e serviços finais produzidos num país num período.", "A renda total de todos os cidadãos.", "O total de gastos do governo."], answer: "O valor de mercado de todos os bens e serviços finais produzidos num país num período.", explanation: "A definição correta do PIB foca em bens 'finais' para evitar dupla contagem e mede a produção dentro do território." },
+        { category: "Política Monetária", question: "Verdadeiro ou Falso: Uma política monetária restritiva visa estimular o consumo.", options: ["Verdadeiro", "Falso"], answer: "Falso", explanation: "Uma política monetária restritiva visa 'esfriar' a economia, desestimulando o consumo ao tornar o crédito mais caro." },
+        { category: "Modelo IS-LM", question: "No modelo IS-LM, a curva IS representa o equilíbrio em qual mercado?", options: ["Monetário.", "De trabalho.", "De bens e serviços.", "De câmbio."], answer: "De bens e serviços.", explanation: "A curva IS (Investment-Saving) mostra as combinações de juros e renda que equilibram o mercado de bens e serviços." },
+        { category: "Modelo IS-LM", question: "No modelo IS-LM, a curva LM tem inclinação positiva porque:", options: ["Um aumento da renda eleva a demanda por moeda, exigindo um aumento nos juros para reequilibrar.", "Um aumento da renda reduz a demanda por moeda.", "O aumento dos juros causa queda na renda.", "A inclinação da LM não tem relação com o mercado monetário."], answer: "Um aumento da renda eleva a demanda por moeda, exigindo um aumento nos juros para reequilibrar.", explanation: "Com mais renda, as pessoas transacionam mais e demandam mais moeda. Para que a demanda se iguale à oferta, os juros devem subir." },
+        { category: "Sistema Monetário", question: "A fórmula do 'Multiplicador Bancário' é 1/RR. Qual a sua função?", options: ["Calcular os juros.", "Calcular o total de moeda criada a partir de um depósito inicial.", "Medir a inflação.", "Controlar o comércio exterior."], answer: "Calcular o total de moeda criada a partir de um depósito inicial.", explanation: "O multiplicador mostra como o sistema bancário cria moeda através de empréstimos, a partir da fração dos depósitos mantida como reserva." },
+        { category: "Economia Aberta", question: "Verdadeiro ou Falso: O regime de 'flutuação suja' ocorre quando o BC nunca intervém no câmbio.", options: ["Verdadeiro", "Falso"], answer: "Falso", explanation: "Na 'flutuação suja', o BC intervém para evitar grandes oscilações. A ausência total de intervenção é a 'flutuação pura'." }
+    ];
+
+    const questionArea = document.getElementById('question-area');
+    const questionCategory = document.getElementById('question-category');
+    const questionText = document.getElementById('question-text');
+    const optionsList = document.getElementById('options');
+    const actionBtn = document.getElementById('action-btn');
+    const feedbackArea = document.getElementById('feedback-area');
+    const explanationText = document.getElementById('explanation-text');
+    const scoreFeedback = document.getElementById('score-feedback');
+    const resultsArea = document.getElementById('results-area');
+    const scoreText = document.getElementById('score');
+    const restartBtn = document.getElementById('restart-btn');
+    const reviewBtn = document.getElementById('review-btn');
+    const reviewArea = document.getElementById('review-area');
+    const timerDisplay = document.getElementById('timer');
+    const correctSound = document.getElementById('correct-sound');
+    const incorrectSound = document.getElementById('incorrect-sound');
+
+    let currentQuestionIndex = 0;
+    let score = 0;
+    const POINTS_PER_QUESTION = 10;
+    let selectedOption = null;
+    let shuffledQuestions = [];
+    let userAnswers = [];
+    let timerInterval;
+    const TIME_LIMIT = 30;
+
+    function shuffleArray(array) {
+        return array.sort(() => Math.random() - 0.5);
+    }
+
+    function startTimer() {
+        let timeLeft = TIME_LIMIT;
+        timerDisplay.textContent = timeLeft;
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            timerDisplay.textContent = timeLeft;
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                handleTimeOut();
+            }
+        }, 1000);
+    }
+    
+    function handleTimeOut() {
+        incorrectSound.play();
+        userAnswers.push({ question: shuffledQuestions[currentQuestionIndex].question, userAnswer: "Tempo esgotado", correctAnswer: shuffledQuestions[currentQuestionIndex].answer });
+        currentQuestionIndex++;
+        if (currentQuestionIndex < shuffledQuestions.length) loadQuestion();
+        else showResults();
+    }
+
+    function startQuiz() {
+        shuffledQuestions = shuffleArray([...quizData]);
+        questionArea.style.display = 'block';
+        resultsArea.style.display = 'none';
+        reviewArea.style.display = 'none';
+        actionBtn.style.display = 'block';
+        currentQuestionIndex = 0;
+        score = 0;
+        userAnswers = [];
+        loadQuestion();
+    }
+    
+    function loadQuestion() {
+        clearInterval(timerInterval);
+        feedbackArea.style.display = 'none';
+        const currentQuestion = shuffledQuestions[currentQuestionIndex];
+        questionCategory.textContent = currentQuestion.category;
+        questionText.textContent = currentQuestion.question;
+        optionsList.innerHTML = '';
+        const shuffledOptions = shuffleArray([...currentQuestion.options]);
+        shuffledOptions.forEach(optionText => {
+            const li = document.createElement('li');
+            li.textContent = optionText;
+            li.classList.add('option-item');
+            li.addEventListener('click', (e) => {
+                if (actionBtn.disabled) return;
+                document.querySelectorAll('.option-item').forEach(item => item.classList.remove('selected'));
+                e.currentTarget.classList.add('selected');
+                selectedOption = e.currentTarget;
+            });
+            optionsList.appendChild(li);
+        });
+        actionBtn.disabled = false;
+        actionBtn.textContent = 'Verificar Resposta';
+        startTimer();
+    }
+
+    function checkAnswer() {
+        if (!selectedOption) return;
+
+        clearInterval(timerInterval);
+        actionBtn.disabled = true;
+        
+        const answer = shuffledQuestions[currentQuestionIndex].answer;
+        const isCorrect = selectedOption.textContent === answer;
+        
+        userAnswers.push({ question: shuffledQuestions[currentQuestionIndex].question, userAnswer: selectedOption.textContent, correctAnswer: answer });
+
+        if (isCorrect) {
+            score++;
+            selectedOption.classList.add('correct');
+            correctSound.play();
+            scoreFeedback.textContent = `+${POINTS_PER_QUESTION} Pontos!`;
+        } else {
+            selectedOption.classList.add('incorrect');
+            incorrectSound.play();
+            scoreFeedback.textContent = "";
+        }
+
+        explanationText.textContent = shuffledQuestions[currentQuestionIndex].explanation;
+        feedbackArea.style.display = 'block';
+        document.querySelectorAll('.option-item').forEach(item => item.style.pointerEvents = 'none');
+
+        actionBtn.textContent = (currentQuestionIndex < shuffledQuestions.length - 1) ? 'Próxima Pergunta' : 'Ver Resultados';
+        actionBtn.disabled = false;
+    }
+
+    function showResults() {
+        clearInterval(timerInterval);
+        questionArea.style.display = 'none';
+        feedbackArea.style.display = 'none';
+        actionBtn.style.display = 'none';
+        resultsArea.style.display = 'block';
+        scoreText.textContent = `${score * POINTS_PER_QUESTION} Pontos`;
+    }
+    
+    // As outras funções como showReview() permanecem as mesmas
+    function showReview() {
+        resultsArea.style.display = 'none';
+        reviewArea.style.display = 'block';
+        reviewArea.innerHTML = '<h3>Revisão do Quiz</h3>';
+        userAnswers.forEach(ans => {
+            const questionDiv = document.createElement('div');
+            questionDiv.style.cssText = "text-align: left; margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 8px;";
+            const isCorrect = ans.userAnswer === ans.correctAnswer;
+            questionDiv.innerHTML = `<p><strong>Pergunta:</strong> ${ans.question}</p><p><strong>Sua resposta:</strong> <span style="color: ${isCorrect ? '#28a745' : '#dc3545'}; font-weight: bold;">${ans.userAnswer}</span></p>${!isCorrect ? `<p><strong>Resposta correta:</strong> <span style="color: #28a745; font-weight: bold;">${ans.correctAnswer}</span></p>` : ''}`;
+            reviewArea.appendChild(questionDiv);
+        });
+    }
+
+    actionBtn.addEventListener('click', () => {
+        const btnText = actionBtn.textContent;
+        if (btnText === 'Iniciar Quiz') startQuiz();
+        else if (btnText === 'Verificar Resposta') checkAnswer();
+        else if (btnText === 'Próxima Pergunta') { currentQuestionIndex++; loadQuestion(); }
+        else if (btnText === 'Ver Resultados') showResults();
+    });
+
+    restartBtn.addEventListener('click', startQuiz);
+    reviewBtn.addEventListener('click', showReview);
+</script>
+
+</body>
+</html>
