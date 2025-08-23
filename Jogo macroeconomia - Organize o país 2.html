@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Macro-Tycoon: O Jogo da Economia (Modelo Original + Funcionalidades)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .progress-bar-fill { transition: width 0.5s ease-in-out; }
+        input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 8px; background: #4a5568; border-radius: 5px; outline: none; opacity: 0.7; transition: opacity .2s; }
+        input[type=range]:hover { opacity: 1; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 24px; height: 24px; background: #4299e1; cursor: pointer; border-radius: 50%; border: 2px solid #edf2f7; }
+        .policy-btn:disabled { background-color: #4a5568 !important; cursor: not-allowed; opacity: 0.6; }
+
+        .tooltip { position: relative; display: inline-block; }
+        .tooltip .tooltip-text {
+            visibility: hidden;
+            width: 220px;
+            background-color: #1a202c;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 8px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -110px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.8rem;
+            line-height: 1.2;
+            border: 1px solid #4a5568;
+        }
+        .tooltip:hover .tooltip-text { visibility: visible; opacity: 1; }
+    </style>
+</head>
+<body class="bg-gray-900 text-white flex items-center justify-center min-h-screen p-4">
+
+    <div id="scenarioModal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+        <div class="bg-gray-800 rounded-lg p-8 text-center shadow-2xl max-w-5xl w-full">
+            <h2 class="text-3xl font-bold mb-6 text-blue-400">Escolha seu Desafio</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="bg-gray-700 p-6 rounded-lg border border-gray-600 hover:border-blue-500 flex flex-col"><h3 class="text-xl font-semibold mb-2 text-red-400">Crise Inflacionária</h3><p class="text-gray-400 text-sm mb-4 flex-grow">A inflação está fora de controlo. A sua missão é domar a alta dos preços.</p><button class="scenario-btn mt-auto w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg" data-scenario="inflation">Jogar</button></div>
+                <div class="bg-gray-700 p-6 rounded-lg border border-gray-600 hover:border-blue-500 flex flex-col"><h3 class="text-xl font-semibold mb-2 text-yellow-400">Recessão Profunda</h3><p class="text-gray-400 text-sm mb-4 flex-grow">A economia está a encolher e o desemprego é alarmante. Você precisa de reativar a economia.</p><button class="scenario-btn mt-auto w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg" data-scenario="recession">Jogar</button></div>
+                <div class="bg-gray-700 p-6 rounded-lg border border-gray-600 hover:border-blue-500 flex flex-col"><h3 class="text-xl font-semibold mb-2 text-green-400">Início Normal</h3><p class="text-gray-400 text-sm mb-4 flex-grow">A economia está estável. Mantenha o bom desempenho e navegue pelos imprevistos.</p><button class="scenario-btn mt-auto w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg" data-scenario="normal">Jogar</button></div>
+                <div class="bg-gray-700 p-6 rounded-lg border border-gray-600 hover:border-blue-500 flex flex-col"><h3 class="text-xl font-semibold mb-2 text-purple-400">Armadilha da Liquidez</h3><p class="text-gray-400 text-sm mb-4 flex-grow">Deflação e juros no chão. A política monetária é ineficaz. A única saída é fiscal, mas cuidado com a dívida.</p><button class="scenario-btn mt-auto w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg" data-scenario="liquidityTrap">Jogar</button></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="gameContainer" class="w-full max-w-7xl mx-auto bg-gray-800 rounded-2xl shadow-2xl p-6 md:p-8 hidden">
+        <header class="text-center mb-6"><h1 class="text-3xl md:text-4xl font-bold text-blue-400">Macro-Tycoon</h1><p class="text-gray-400 mt-2">Seu mandato: 4 anos. A sua missão: Estabilidade Económica.</p></header>
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <aside class="lg:col-span-2 bg-gray-700/50 p-6 rounded-lg flex flex-col">
+                <h2 class="text-xl font-semibold mb-4 border-b border-gray-600 pb-2">Indicadores</h2>
+                <div class="space-y-5">
+                    <div><div class="flex justify-between items-baseline mb-1"><span class="font-medium">PIB</span><span id="gdpValue" class="font-bold text-lg text-green-400"></span></div><div class="w-full bg-gray-600 rounded-full h-2.5"><div id="gdpBar" class="bg-green-500 h-2.5 rounded-full"></div></div></div>
+                    <div><div class="flex justify-between items-baseline mb-1"><span class="font-medium">Inflação</span><span id="inflationValue" class="font-bold text-lg text-red-400"></span></div><div class="w-full bg-gray-600 rounded-full h-2.5"><div id="inflationBar" class="bg-red-500 h-2.5 rounded-full"></div></div></div>
+                    <div><div class="flex justify-between items-baseline mb-1"><span class="font-medium">Desemprego</span><span id="unemploymentValue" class="font-bold text-lg text-yellow-400"></span></div><div class="w-full bg-gray-600 rounded-full h-2.5"><div id="unemploymentBar" class="bg-yellow-500 h-2.5 rounded-full"></div></div></div>
+                    <div><div class="flex justify-between items-baseline mb-1"><span class="font-medium">Dívida/PIB</span><span id="publicDebtValue" class="font-bold text-lg text-purple-400"></span></div><div class="w-full bg-gray-600 rounded-full h-2.5"><div id="publicDebtBar" class="bg-purple-500 h-2.5 rounded-full"></div></div></div>
+                    <div><div class="flex justify-between items-baseline mb-1"><span class="font-medium">Aprovação</span><span id="approvalValue" class="font-bold text-lg text-blue-400"></span></div><div class="w-full bg-gray-600 rounded-full h-2.5"><div id="approvalBar" class="bg-blue-500 h-2.5 rounded-full"></div></div></div>
+                </div>
+                <div class="mt-6 text-center text-lg font-semibold bg-gray-800 p-3 rounded-lg"><span>Trimestre: </span><span id="roundCounter">1</span> / 16</div>
+                <div class="mt-3 text-center text-lg font-semibold bg-gray-800 p-3 rounded-lg"><span>Ações: </span><span id="actionPoints" class="text-blue-400"></span></div>
+                
+                <div class="mt-6 flex-grow">
+                    <h3 class="text-xl font-semibold mb-2 text-center border-t border-gray-600 pt-4">Histórico</h3>
+                    <canvas id="historyChart"></canvas>
+                </div>
+            </aside>
+            <main class="lg:col-span-8 bg-gray-700/50 p-6 rounded-lg flex flex-col">
+                <h2 class="text-xl font-semibold mb-4 text-center">Painel de Controlo Macroeconómico</h2>
+                <div class="bg-gray-800 p-4 rounded-lg mb-4">
+                    <label for="interestRateSlider" class="block mb-2 font-medium text-center">Taxa de Juros Base: <span id="interestRateValue" class="font-bold text-blue-300"></span></label>
+                    <input type="range" id="interestRateSlider" min="0.5" max="20" step="0.25" class="w-full">
+                </div>
+                <div id="policyControls" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div class="bg-gray-800 p-3 rounded-lg">
+                        <h3 class="text-center font-semibold mb-2 text-gray-300">Política Fiscal (Governo)</h3>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="tooltip"><button id="infraBtn" class="policy-btn fiscal-policy w-full text-xs py-2 px-2 rounded-lg bg-green-700 hover:bg-green-800">Infraestrutura <span class="font-bold text-gray-300">(-2)</span></button><span class="tooltip-text">Aumenta muito o PIB no curto prazo, mas eleva bastante a dívida pública. Uma política expansionista clássica.</span></div>
+                            <div class="tooltip"><button id="socialBtn" class="policy-btn fiscal-policy w-full text-xs py-2 px-2 rounded-lg bg-green-500 hover:bg-green-600">Programas Sociais <span class="font-bold text-gray-300">(-1)</span></button><span class="tooltip-text">Aumenta o PIB e a aprovação popular, com um custo moderado para a dívida. Bom para popularidade e consumo.</span></div>
+                            <div class="tooltip"><button id="taxCutBtn" class="policy-btn fiscal-policy w-full text-xs py-2 px-2 rounded-lg bg-yellow-500 hover:bg-yellow-600">Cortar Impostos <span class="font-bold text-gray-300">(-1)</span></button><span class="tooltip-text">Estimula o investimento privado, aumentando o PIB com um custo fiscal. Pode demorar a fazer efeito total.</span></div>
+                            <div class="tooltip"><button id="taxHikeBtn" class="policy-btn fiscal-policy w-full text-xs py-2 px-2 rounded-lg bg-red-600 hover:bg-red-700">Aumentar Impostos <span class="font-bold text-gray-300">(-1)</span></button><span class="tooltip-text">Reduz a dívida, mas contrai a economia (PIB) e derruba a aprovação. Medida contracionista e impopular.</span></div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-800 p-3 rounded-lg">
+                        <h3 class="text-center font-semibold mb-2 text-gray-300">Política Monetária (BC)</h3>
+                        <div class="grid grid-cols-2 gap-2 pt-5">
+                             <div class="tooltip"><button id="reduceReserveBtn" class="policy-btn monetary-policy w-full text-sm py-2 px-3 rounded-lg bg-blue-500 hover:bg-blue-600">Reduzir Compulsório <span class="font-bold text-gray-300">(-1)</span></button><span class="tooltip-text">Aumenta a liquidez dos bancos, estimulando o crédito e o PIB, mas pode gerar um pouco de inflação.</span></div>
+                            <div class="tooltip"><button id="increaseReserveBtn" class="policy-btn monetary-policy w-full text-sm py-2 px-3 rounded-lg bg-orange-500 hover:bg-orange-600">Aumentar Compulsório <span class="font-bold text-gray-300">(-1)</span></button><span class="tooltip-text">Restringe o crédito para 'esfriar' a economia e controlar a inflação, com um leve custo para o PIB.</span></div>
+                        </div>
+                    </div>
+                </div>
+                <button id="nextRoundBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-lg mt-auto">Avançar Trimestre</button>
+                <div class="flex-grow mt-4 bg-gray-800 rounded-lg p-2 flex items-center justify-center relative">
+                    <canvas id="is-lm-chart"></canvas>
+                    <div class="tooltip absolute top-2 right-2">
+                        <span class="bg-gray-600 rounded-full w-6 h-6 flex items-center justify-center font-bold cursor-pointer">i</span>
+                        <span class="tooltip-text">O gráfico IS-LM mostra o equilíbrio entre o mercado de bens (curva IS) e o mercado monetário (curva LM). A linha verde pontilhada é o resultado projetado da sua decisão para a taxa de juros neste trimestre.</span>
+                    </div>
+                </div>
+            </main>
+            <aside class="lg:col-span-2 bg-gray-700/50 p-6 rounded-lg flex flex-col">
+                <div id="advisorPanel" class="bg-gray-800 rounded-lg p-4 mb-4 border border-blue-400/50">
+                    <h3 class="text-lg font-semibold mb-2 text-blue-300 flex items-center">
+                        <span id="advisorIcon" class="mr-2"></span>
+                        <span id="advisorTitle"></span>
+                    </h3>
+                    <p id="advisorMessage" class="text-gray-400 text-sm italic"></p>
+                </div>
+                <h2 class="text-xl font-semibold mb-4 border-b border-gray-600 pb-2">Noticiário</h2>
+                <div id="newsFeed" class="space-y-3 flex-grow overflow-y-auto pr-2"></div>
+            </aside>
+        </div>
+    </div>
+    
+    <div id="gameOverModal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden z-50">
+        <div class="bg-gray-800 rounded-lg p-8 text-center shadow-2xl max-w-lg w-full">
+            <h2 id="modalOutcomeTitle" class="text-2xl font-bold mb-2 text-yellow-300"></h2>
+            <p id="modalMessage" class="text-gray-300 mb-6"></p>
+            <div id="retrospectiveReport" class="mt-6 text-left"></div>
+            <button id="restartBtn" class="mt-6 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">Jogar Novamente</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const domElements = {
+                gdpValue: document.getElementById('gdpValue'), gdpBar: document.getElementById('gdpBar'),
+                inflationValue: document.getElementById('inflationValue'), inflationBar: document.getElementById('inflationBar'),
+                unemploymentValue: document.getElementById('unemploymentValue'), unemploymentBar: document.getElementById('unemploymentBar'),
+                approvalValue: document.getElementById('approvalValue'), approvalBar: document.getElementById('approvalBar'),
+                publicDebtValue: document.getElementById('publicDebtValue'), publicDebtBar: document.getElementById('publicDebtBar'),
+                roundCounter: document.getElementById('roundCounter'), actionPoints: document.getElementById('actionPoints'),
+                interestRateValue: document.getElementById('interestRateValue'), interestRateSlider: document.getElementById('interestRateSlider'),
+                nextRoundBtn: document.getElementById('nextRoundBtn'), newsFeed: document.getElementById('newsFeed'),
+                gameOverModal: document.getElementById('gameOverModal'), modalOutcomeTitle: document.getElementById('modalOutcomeTitle'),
+                modalMessage: document.getElementById('modalMessage'), restartBtn: document.getElementById('restartBtn'),
+                canvas: document.getElementById('is-lm-chart'), ctx: document.getElementById('is-lm-chart').getContext('2d'),
+                policyButtons: document.querySelectorAll('.policy-btn'), scenarioModal: document.getElementById('scenarioModal'),
+                gameContainer: document.getElementById('gameContainer'), scenarioButtons: document.querySelectorAll('.scenario-btn'),
+                advisorIcon: document.getElementById('advisorIcon'), advisorTitle: document.getElementById('advisorTitle'),
+                advisorMessage: document.getElementById('advisorMessage'), retrospectiveReport: document.getElementById('retrospectiveReport'),
+                historyChartCanvas: document.getElementById('historyChart'),
+            };
+
+            let state = {};
+            let initialState = {};
+            let historyChartInstance = null;
+
+            const scenarios = {
+                normal: { gdp: 2.5, inflation: 4.5, unemployment: 6, approval: 50, publicDebt: 65, actionPoints: 3 },
+                inflation: { gdp: 1.5, inflation: 18, unemployment: 7, approval: 30, publicDebt: 75, actionPoints: 3 },
+                recession: { gdp: -2, inflation: 2, unemployment: 14, approval: 25, publicDebt: 85, actionPoints: 4 },
+                liquidityTrap: { gdp: -0.5, inflation: -1, unemployment: 11, approval: 35, publicDebt: 85, actionPoints: 4 }
+            };
+
+            const simParams = {
+                is_slope: 5, lm_slope: 0.05, GDP_TARGET: 2.5, GDP_EQUILIBRIUM_BASE: 140, GDP_EQUILIBRIUM_SENSITIVITY: 0.1,
+                OKUN_LAW_COEFFICIENT: -0.4, INFRA_IS_BOOST: 18, INFRA_DEBT_COST: 12, SOCIAL_IS_BOOST: 8, SOCIAL_APPROVAL_BOOST: 7,
+                SOCIAL_DEBT_COST: 6, TAX_CUT_IS_BOOST: 10, TAX_CUT_DEBT_COST: 8, TAX_HIKE_IS_HIT: -10, TAX_HIKE_APPROVAL_HIT: -8,
+                TAX_HIKE_DEBT_REDUCTION: -10, RESERVE_CHANGE_LM_EFFECT: 1.5
+            };
+
+            const randomEvents = [
+                { text: "Aumento inesperado nos gastos do governo impulsiona a demanda.", effect: { is_intercept: 10 }, type: 'good' },
+                { text: "Inovações tecnológicas aumentam a produtividade.", effect: { gdp: 1, unemployment: -0.5 }, type: 'good' },
+                { text: "Crise internacional reduz exportações.", effect: { is_intercept: -15 }, type: 'bad' },
+                { text: "Choque de oferta! Preços de commodities disparam.", effect: { inflation: 2.5 }, type: 'bad' }
+            ];
+
+            const policies = {
+                infraBtn: { effects: { is_intercept: simParams.INFRA_IS_BOOST, publicDebt: simParams.INFRA_DEBT_COST }, news: "Governo anuncia pacote de investimentos em infraestrutura.", cost: 2 },
+                socialBtn: { effects: { is_intercept: simParams.SOCIAL_IS_BOOST, publicDebt: simParams.SOCIAL_DEBT_COST, approval: simParams.SOCIAL_APPROVAL_BOOST }, news: "Expansão de programas sociais aumenta a popularidade.", cost: 1 },
+                taxCutBtn: { effects: { is_intercept: simParams.TAX_CUT_IS_BOOST, publicDebt: simParams.TAX_CUT_DEBT_COST }, news: "Corte de impostos para empresas é anunciado para estimular investimentos.", cost: 1 },
+                taxHikeBtn: { effects: { is_intercept: simParams.TAX_HIKE_IS_HIT, publicDebt: simParams.TAX_HIKE_DEBT_REDUCTION, approval: simParams.TAX_HIKE_APPROVAL_HIT }, news: "Governo anuncia impopular aumento de impostos para controlar a dívida.", cost: 1 },
+                reduceReserveBtn: { effects: { lm_intercept: -simParams.RESERVE_CHANGE_LM_EFFECT }, news: "BC reduz compulsório bancário para aumentar liquidez.", cost: 1 },
+                increaseReserveBtn: { effects: { lm_intercept: simParams.RESERVE_CHANGE_LM_EFFECT }, news: "Para conter a inflação, BC aumenta o compulsório e restringe o crédito.", cost: 1 }
+            };
+            
+            const advisors = {
+                MINISTER: { title: "Ministro da Fazenda", icon: '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3m-3 0a5.002 5.002 0 005.001-5.001M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>' },
+                CENTRAL_BANK: { title: "Presidente do BC", icon: '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>' },
+                CHIEF: { title: "Assessor Chefe", icon: '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>' }
+            };
+
+            const advisorMessages = {
+                high_inflation: ["A inflação está muito acima da meta. Precisamos de agir para proteger o poder de compra da população."],
+                deflation: ["O risco de deflação é real e perigoso para a economia. Uma política monetária expansionista é necessária."],
+                recession: ["A economia está a encolher. Medidas de estímulo fiscal, como investimentos, podem reativar o crescimento."],
+                unemployment: ["O desemprego está alto. Precisamos de políticas que estimulem o crescimento e a geração de vagas."],
+                debt: ["A nossa dívida pública está num nível preocupante. A austeridade pode ser impopular, mas é necessária."],
+                stable: ["A economia está estável, Presidente. Continue com o bom trabalho, mantendo os indicadores sob controlo."]
+            };
+
+            function initializeGame(scenarioData, scenarioKey) {
+                state = {
+                    ...scenarioData,
+                    scenario: scenarioKey,
+                    interestRate: 8, round: 1, is_intercept: 150, lm_intercept: 5,
+                    previous_is_intercept: 150,
+                    previous_lm_intercept: 5,
+                    history: { rounds: [], gdp: [], inflation: [], unemployment: [] }
+                };
+                if (scenarioKey === 'liquidityTrap') state.interestRate = 0.5;
+                
+                initialState = { ...state };
+                domElements.interestRateSlider.value = state.interestRate;
+                domElements.newsFeed.innerHTML = `<p class="text-gray-500">T0: Você assumiu o governo. O cenário é desafiador.</p>`;
+                domElements.gameOverModal.classList.add('hidden');
+                
+                updateHistoryData();
+                initHistoryChart();
+                updateUI();
+                updateAdvisor();
+                checkButtonState();
+            }
+
+            function startGame(scenarioKey) {
+                domElements.scenarioModal.classList.add('hidden');
+                domElements.gameContainer.classList.remove('hidden');
+                initializeGame(scenarios[scenarioKey], scenarioKey);
+            }
+
+            function applyPolicyEffect(policyData) {
+                if (state.actionPoints >= policyData.cost) {
+                    state.actionPoints -= policyData.cost;
+                    Object.keys(policyData.effects).forEach(key => {
+                        state[key] += policyData.effects[key];
+                    });
+                    addNews(policyData.news, 'neutral');
+                    updateUI();
+                    checkButtonState();
+                } else {
+                    addNews("Ação não realizada. Pontos de Ação insuficientes!", 'bad');
+                }
+            }
+
+            function nextRound() {
+                let equilibriumY = (state.is_intercept + simParams.is_slope * state.lm_intercept) / (1 + simParams.is_slope * simParams.lm_slope);
+                const playerInterestRate = parseFloat(domElements.interestRateSlider.value);
+                equilibriumY -= (playerInterestRate - state.interestRate) * simParams.is_slope;
+                const targetGdp = simParams.GDP_TARGET + (equilibriumY - simParams.GDP_EQUILIBRIUM_BASE) * simParams.GDP_EQUILIBRIUM_SENSITIVITY;
+                state.gdp += (targetGdp - state.gdp) * 0.7;
+
+                let unemploymentChange = simParams.OKUN_LAW_COEFFICIENT * (state.gdp - simParams.GDP_TARGET);
+                state.unemployment += unemploymentChange;
+                state.unemployment = Math.max(1, state.unemployment);
+
+                state.inflation += (state.gdp - simParams.GDP_TARGET) * 0.2;
+                if (state.inflation < 0) state.publicDebt -= state.inflation * 0.5;
+                state.publicDebt += (simParams.GDP_TARGET - state.gdp) * 0.5;
+
+                if (Math.random() < 0.25 && state.round > 1) {
+                    const event = randomEvents[Math.floor(Math.random() * randomEvents.length)];
+                    addNews(event.text, event.type);
+                    Object.keys(event.effect).forEach(key => state[key] += event.effect[key]);
+                }
+
+                let gdpScore = (state.gdp - 1.5) * 2, unemploymentScore = (7 - state.unemployment) * 2;
+                let inflationPenalty = Math.abs(state.inflation - 4.5);
+                let debtScore = 0;
+                if (state.publicDebt > 110) debtScore = -4; else if (state.publicDebt > 90) debtScore = -2; else if (state.publicDebt < 60) debtScore = 2;
+                state.approval += (gdpScore + unemploymentScore - inflationPenalty + debtScore);
+                state.approval = Math.max(5, Math.min(100, state.approval));
+
+                state.interestRate = playerInterestRate;
+                state.lm_intercept = simParams.lm_slope * equilibriumY - state.interestRate;
+                state.round++;
+                state.actionPoints = initialState.actionPoints;
+                
+                state.previous_is_intercept = state.is_intercept;
+                state.previous_lm_intercept = state.lm_intercept;
+                
+                updateHistoryData();
+                if (!checkEndConditions()) {
+                    updateUI();
+                    updateAdvisor();
+                    checkButtonState();
+                }
+            }
+
+            function updateUI() {
+                Object.keys(state).forEach(key => {
+                    const elValue = domElements[`${key}Value`], elBar = domElements[`${key}Bar`];
+                    if (elValue) elValue.textContent = `${state[key].toFixed(key === 'approval' ? 0 : 1)}%`;
+                    if (elBar) {
+                        let width = 0;
+                        if (key === 'gdp') width = (state.gdp + 5) * 10;
+                        else if (key === 'inflation' || key === 'unemployment') width = state[key] * 5;
+                        else if (key === 'publicDebt' || key === 'approval') width = state[key];
+                        elBar.style.width = `${Math.max(0, Math.min(100, width))}%`;
+                    }
+                });
+                domElements.actionPoints.textContent = state.actionPoints;
+                domElements.interestRateValue.textContent = `${parseFloat(domElements.interestRateSlider.value).toFixed(2)}%`;
+                domElements.roundCounter.textContent = state.round;
+                drawISLM();
+                updateHistoryChart();
+            }
+
+            function checkButtonState() {
+                domElements.policyButtons.forEach(btn => {
+                    const policy = policies[btn.id];
+                    if (policy) btn.disabled = state.actionPoints < policy.cost;
+                });
+            }
+            
+            function drawISLM() {
+                const { canvas, ctx } = domElements, width = canvas.clientWidth, height = canvas.clientHeight;
+                canvas.width = width; canvas.height = height;
+                ctx.clearRect(0, 0, width, height);
+                const padding = 40, maxX = 200, maxY = 25;
+                const mapX = x => padding + (x / maxX) * (width - 2 * padding), mapY = y => height - padding - (y / maxY) * (height - 2 * padding);
+
+                ctx.beginPath(); ctx.moveTo(padding, padding); ctx.lineTo(padding, height - padding); ctx.lineTo(width - padding, height - padding);
+                ctx.strokeStyle = '#4a5568'; ctx.stroke();
+                ctx.fillStyle = '#a0aec0'; ctx.font = '12px Inter'; ctx.textAlign = 'center';
+                ctx.fillText('Renda (PIB)', width / 2, height - 10);
+                ctx.save(); ctx.translate(15, height / 2); ctx.rotate(-Math.PI / 2); ctx.fillText('Taxa de Juros (r)', 0, 0); ctx.restore();
+
+                const drawCurve = (intercept, slope, color, isDashed = false, isLM = false) => {
+                    ctx.beginPath();
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 2;
+                    ctx.globalAlpha = isDashed ? 0.4 : 1.0;
+                    if (isDashed) ctx.setLineDash([5, 5]);
+                    
+                    for (let y = 0; y <= maxX; y++) {
+                        const r = isLM ? (slope * y - intercept) : (intercept / slope - y / slope);
+                        if (y === 0) ctx.moveTo(mapX(y), mapY(r)); else ctx.lineTo(mapX(y), mapY(r));
+                    }
+                    ctx.stroke();
+                    if (isDashed) ctx.setLineDash([]);
+                    ctx.globalAlpha = 1.0;
+                };
+
+                if (state.previous_is_intercept !== state.is_intercept) drawCurve(state.previous_is_intercept, simParams.is_slope, '#f56565', true, false);
+                if (state.previous_lm_intercept !== state.lm_intercept) drawCurve(state.previous_lm_intercept, simParams.lm_slope, '#4299e1', true, true);
+
+                drawCurve(state.is_intercept, simParams.is_slope, '#f56565', false, false);
+                ctx.fillStyle = '#f56565'; ctx.fillText('IS', mapX(170), mapY(state.is_intercept / simParams.is_slope - 170 / simParams.is_slope - 2));
+
+                drawCurve(state.lm_intercept, simParams.lm_slope, '#4299e1', false, true);
+                ctx.fillStyle = '#4299e1'; ctx.fillText('LM', mapX(170), mapY(simParams.lm_slope * 170 - state.lm_intercept + 2));
+
+                const eqY = (state.is_intercept + simParams.is_slope * state.lm_intercept) / (1 + simParams.is_slope * simParams.lm_slope), eqR = simParams.lm_slope * eqY - state.lm_intercept;
+                ctx.beginPath(); ctx.setLineDash([5, 5]); ctx.strokeStyle = '#a0aec0';
+                ctx.moveTo(padding, mapY(eqR)); ctx.lineTo(mapX(eqY), mapY(eqR)); ctx.lineTo(mapX(eqY), height - padding); ctx.stroke();
+                ctx.setLineDash([]); ctx.beginPath(); ctx.arc(mapX(eqY), mapY(eqR), 5, 0, 2 * Math.PI); ctx.fillStyle = '#f6e05e'; ctx.fill();
+
+                const proposedInterestRate = parseFloat(domElements.interestRateSlider.value);
+                const proposedY = state.is_intercept - (proposedInterestRate * simParams.is_slope);
+                const clampedY = Math.max(0, Math.min(maxX, proposedY));
+                ctx.beginPath(); ctx.setLineDash([4, 4]); ctx.strokeStyle = '#38a169';
+                ctx.moveTo(padding, mapY(proposedInterestRate)); ctx.lineTo(mapX(clampedY), mapY(proposedInterestRate));
+                ctx.lineTo(mapX(clampedY), height - padding); ctx.stroke();
+                ctx.setLineDash([]); ctx.beginPath(); ctx.arc(mapX(clampedY), mapY(proposedInterestRate), 6, 0, 2 * Math.PI); ctx.fillStyle = '#38a169'; ctx.fill();
+                ctx.fillStyle = '#f0f0f0'; ctx.font = 'bold 12px Inter'; ctx.textAlign = 'left';
+                ctx.fillText(`PIB Proj: ${proposedY.toFixed(1)}`, mapX(clampedY) + 10, mapY(proposedInterestRate) - 10);
+            }
+
+            function initHistoryChart() {
+                if (historyChartInstance) historyChartInstance.destroy();
+                const ctx = domElements.historyChartCanvas.getContext('2d');
+                historyChartInstance = new Chart(ctx, {
+                    type: 'line', data: { labels: [], datasets: [
+                        { label: 'PIB (%)', data: [], borderColor: '#48bb78', tension: 0.1, fill: false },
+                        { label: 'Inflação (%)', data: [], borderColor: '#f56565', tension: 0.1, fill: false },
+                        { label: 'Desemprego (%)', data: [], borderColor: '#ecc94b', tension: 0.1, fill: false }
+                    ]},
+                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { ticks: { color: '#a0aec0' }}, x: { ticks: { color: '#a0aec0' }}}, plugins: { legend: { labels: { color: '#a0aec0', boxWidth: 10, font: { size: 10 }}}}}
+                });
+            }
+            function updateHistoryData() {
+                state.history.rounds.push(`T${state.round-1}`);
+                state.history.gdp.push(state.gdp);
+                state.history.inflation.push(state.inflation);
+                state.history.unemployment.push(state.unemployment);
+            }
+            function updateHistoryChart() {
+                if (historyChartInstance) {
+                    historyChartInstance.data.labels = state.history.rounds;
+                    historyChartInstance.data.datasets[0].data = state.history.gdp;
+                    historyChartInstance.data.datasets[1].data = state.history.inflation;
+                    historyChartInstance.data.datasets[2].data = state.history.unemployment;
+                    historyChartInstance.update();
+                }
+            }
+            function setAdvisor(advisor, message) {
+                domElements.advisorIcon.innerHTML = advisor.icon;
+                domElements.advisorTitle.textContent = advisor.title;
+                domElements.advisorMessage.textContent = message;
+            }
+            function updateAdvisor() {
+                let msgList;
+                if (state.inflation > 7) msgList = advisorMessages.high_inflation;
+                else if (state.inflation < 1) msgList = advisorMessages.deflation;
+                else if (state.gdp < 1.5) msgList = advisorMessages.recession;
+                else if (state.unemployment > 8) msgList = advisorMessages.unemployment;
+                else if (state.publicDebt > 95) msgList = advisorMessages.debt;
+                else msgList = advisorMessages.stable;
+                const advisor = state.inflation > 7 || state.inflation < 1 ? advisors.CENTRAL_BANK : (state.gdp < 1.5 || state.unemployment > 8 || state.publicDebt > 95 ? advisors.MINISTER : advisors.CHIEF);
+                setAdvisor(advisor, msgList[Math.floor(Math.random() * msgList.length)]);
+            }
+            function addNews(text, type = 'neutral') {
+                if (domElements.newsFeed.childElementCount > 10) domElements.newsFeed.removeChild(domElements.newsFeed.lastElementChild);
+                const p = document.createElement('p');
+                p.className = `text-sm ${{ good: 'text-green-400', bad: 'text-red-400', neutral: 'text-gray-300' }[type]}`;
+                p.textContent = `T${state.round}: ${text}`;
+                domElements.newsFeed.prepend(p);
+            }
+            function evaluateMandatePerformance() {
+                const solved = () => {
+                    switch (state.scenario) {
+                        case 'inflation': return state.inflation < initialState.inflation;
+                        case 'recession': return state.gdp > 0 && state.unemployment < initialState.unemployment;
+                        case 'liquidityTrap': return state.gdp > 0 && state.inflation > 0;
+                        default: return true;
+                    }
+                };
+                if (!solved()) return { title: "Mandato Fracassado", message: "Você não conseguiu resolver o problema principal que herdou." };
+                const { gdp, inflation, unemployment, publicDebt } = state;
+                if (gdp > 2.5 && unemployment < 6 && inflation < 5 && publicDebt < 80) return { title: "Líder Lendário", message: "Um mandato impecável! Crescimento forte, pleno emprego, inflação baixa e contas em ordem." };
+                if ((gdp > 2 || unemployment < 8) && (publicDebt > 120 || inflation > 10)) return { title: "Governo Populista", message: "Você cumpriu a promessa, mas a que custo? A dívida/inflação é uma bomba-relógio." };
+                if ((publicDebt < 85 || inflation < 5) && (gdp < 1.5 || unemployment > 9)) return { title: "Gestão Austera", message: "Contas em ordem, mas a população sentiu o peso do baixo crescimento e desemprego." };
+                return { title: "Governo Mediano", message: "Você navegou pelas crises, mas sem alcançar resultados extraordinários." };
+            }
+            function checkEndConditions() {
+                let end = false, title = '', msg = '';
+                if (state.approval < 10 && state.scenario === 'normal') { end = true; title = "Impeachment!"; msg = "A sua aprovação popular caiu abaixo de 10%."; }
+                else if (state.inflation > 40) { end = true; title = "Hiperinflação!"; msg = "A economia entrou em colapso."; }
+                else if (state.unemployment > 25) { end = true; title = "Crise Social!"; msg = "O desemprego em massa desestabilizou o país."; }
+                if (state.round > 16) {
+                    end = true;
+                    const perf = evaluateMandatePerformance();
+                    title = perf.title;
+                    msg = perf.message;
+                }
+                if (end) showGameOver(title, msg);
+                return end;
+            }
+            function showGameOver(title, message) {
+                domElements.gameContainer.classList.add('hidden');
+                domElements.modalOutcomeTitle.textContent = title;
+                domElements.modalMessage.textContent = message;
+                const reportEl = domElements.retrospectiveReport;
+                reportEl.innerHTML = '';
+                if (state.round > 16) {
+                    const { gdp, inflation, unemployment, publicDebt, approval } = state;
+                    const indicator = (change, good) => {
+                        if (Math.abs(change) < 0.1) return '';
+                        const color = (good && change > 0) || (!good && change < 0) ? 'text-green-400' : 'text-red-400';
+                        return `<span class="${color} ml-2">${change > 0 ? '▲' : '▼'} ${Math.abs(change).toFixed(1)}</span>`;
+                    };
+                    reportEl.innerHTML = `<h3 class="text-xl font-semibold mb-3 mt-4 border-t border-gray-600 pt-4">Relatório Final</h3><div class="space-y-2 text-gray-300 text-sm">
+                        <div class="flex justify-between p-2 rounded-md bg-gray-700/50"><span>PIB:</span><span>${initialState.gdp.toFixed(1)}% → ${gdp.toFixed(1)}% ${indicator(gdp - initialState.gdp, true)}</span></div>
+                        <div class="flex justify-between p-2 rounded-md bg-gray-700/50"><span>Inflação:</span><span>${initialState.inflation.toFixed(1)}% → ${inflation.toFixed(1)}% ${indicator(inflation - initialState.inflation, false)}</span></div>
+                        <div class="flex justify-between p-2 rounded-md bg-gray-700/50"><span>Desemprego:</span><span>${initialState.unemployment.toFixed(1)}% → ${unemployment.toFixed(1)}% ${indicator(unemployment - initialState.unemployment, false)}</span></div>
+                        <div class="flex justify-between p-2 rounded-md bg-gray-700/50"><span>Dívida/PIB:</span><span>${initialState.publicDebt.toFixed(1)}% → ${publicDebt.toFixed(1)}% ${indicator(publicDebt - initialState.publicDebt, false)}</span></div>
+                        <div class="flex justify-between p-2 rounded-md bg-gray-700/50"><span>Aprovação Final:</span><span>${approval.toFixed(0)}%</span></div></div>`;
+                }
+                domElements.gameOverModal.classList.remove('hidden');
+            }
+
+            domElements.interestRateSlider.addEventListener('input', () => { domElements.interestRateValue.textContent = `${parseFloat(domElements.interestRateSlider.value).toFixed(2)}%`; drawISLM(); });
+            domElements.nextRoundBtn.addEventListener('click', nextRound);
+            domElements.restartBtn.addEventListener('click', () => { domElements.gameOverModal.classList.add('hidden'); domElements.scenarioModal.classList.remove('hidden'); });
+            domElements.scenarioButtons.forEach(button => button.addEventListener('click', e => startGame(e.target.dataset.scenario)));
+            domElements.policyButtons.forEach(button => button.addEventListener('click', () => { const policy = policies[button.id]; if (policy) applyPolicyEffect(policy); }));
+            window.addEventListener('resize', () => { drawISLM(); if (historyChartInstance) historyChartInstance.resize(); });
+        });
+    </script>
+</body>
+</html>
